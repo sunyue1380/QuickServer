@@ -4,11 +4,9 @@ import java.lang.annotation.*;
 
 @Target({ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RequestParam {
+public @interface RequestPart {
     /**参数值*/
-    String value();
+    String name();
     /**是否必须*/
     boolean required() default true;
-    /**参数默认值*/
-    String defaultValue() default "";
 }

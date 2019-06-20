@@ -1,12 +1,13 @@
 package cn.schoolwow.quickserver;
 
-import cn.schoolwow.quickserver.annotation.RequestMapping;
-import cn.schoolwow.quickserver.annotation.RequestMethod;
-import cn.schoolwow.quickserver.annotation.RequestParam;
+import cn.schoolwow.quickserver.annotation.*;
+import cn.schoolwow.quickserver.request.MultipartFile;
 import cn.schoolwow.quickserver.request.RequestHandler;
 import cn.schoolwow.quickserver.request.RequestMeta;
 import cn.schoolwow.quickserver.response.ResponseHandler;
 import cn.schoolwow.quickserver.response.ResponseMeta;
+import cn.schoolwow.quickserver.session.SessionHandler;
+import cn.schoolwow.quickserver.session.SessionMeta;
 import cn.schoolwow.quickserver.util.ControllerUtil;
 import cn.schoolwow.quickserver.util.QuickServerConfig;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.net.HttpCookie;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -79,48 +81,58 @@ public class QuickServer {
         logger.debug("[服务已启动]地址:http://127.0.0.1:{}",port);
         while(true){
             final Socket socket = serverSocket.accept();
-            BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()),8192);
-            BufferedOutputStream bos = new BufferedOutputStream(socket.getOutputStream(),8192);
             threadPoolExecutor.execute(()->{
-                //如果是长连接,则一直保持
-                while(!socket.isClosed()){
-                    try {
-                        RequestMeta requestMeta = RequestHandler.parseRequest(br);
-                        ResponseMeta responseMeta = new ResponseMeta();
-                        responseMeta.protocol = requestMeta.protocol;
-                        handleRequest(requestMeta,responseMeta);
-                        if(responseMeta.body!=null){
-                            responseMeta.headers.put("Content-Type",responseMeta.contentType+"; charset="+responseMeta.charset);
-                            responseMeta.headers.put("Content-Length",responseMeta.body.getBytes().length+"");
-                        }
-                        responseMeta.headers.put("Connection","keep-alive");
-                        if(responseMeta.file==null){
-                            logger.debug("[响应元数据]响应行:{},头部:{},主体:{}", responseMeta.status+" "+responseMeta.statusMessage,responseMeta.headers,responseMeta.body);
-                        }else{
-                            logger.debug("[响应元数据]响应行:{},头部:{},资源:{}", responseMeta.status+" "+responseMeta.statusMessage,responseMeta.headers,responseMeta.file.getAbsolutePath());
-                        }
-                        socket.setKeepAlive(false);
-                        if("Keep-Alive".equalsIgnoreCase(requestMeta.connection)){
-                            socket.setKeepAlive(true);
-                        }
-                        if(socket.getKeepAlive()){
-                            responseMeta.headers.put("Connection","Keep-Alive");
-                        }
-                        ResponseHandler.handleResponse(requestMeta,responseMeta,bos);
-                        //处理keep-alive
-                        if("Close".equalsIgnoreCase(requestMeta.connection)){
-                            socket.close();
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    //处理输入流
+                    RequestMeta requestMeta = new RequestMeta();
+                    requestMeta.inputStream = new BufferedInputStream(socket.getInputStream());
+//                    final BufferedReader br = new BufferedReader(new InputStreamReader(requestMeta.inputStream),8192);
+                    RequestHandler.parseRequest(requestMeta);
+                    //处理输出流
+                    ResponseMeta responseMeta = new ResponseMeta();
+                    responseMeta.protocol = requestMeta.protocol;
+                    responseMeta.outputStream = socket.getOutputStream();
+                    SessionMeta sessionMeta = SessionHandler.handleRequest(requestMeta,responseMeta);
+                    handleRequest(requestMeta,responseMeta,sessionMeta);
+                    handleResponse(responseMeta);
+
+                    final BufferedOutputStream bos = new BufferedOutputStream(socket.getOutputStream(),8192);
+                    ResponseHandler.handleResponse(requestMeta,responseMeta,bos);
+                    socket.close();
+//                    socket.setKeepAlive(false);
+//                    if("Keep-Alive".equalsIgnoreCase(requestMeta.connection)){
+//                        socket.setKeepAlive(true);
+//                    }
+//                    if(socket.getKeepAlive()){
+//                        responseMeta.headers.put("Connection","Keep-Alive");
+//                    }
+//                    //处理keep-alive
+//                    if("Close".equalsIgnoreCase(requestMeta.connection)){
+//                        socket.close();
+//                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             });
         }
     }
 
+    /**处理响应*/
+    public void handleResponse(ResponseMeta responseMeta) {
+        if(responseMeta.body!=null){
+            responseMeta.headers.put("Content-Type",responseMeta.contentType+"; charset="+responseMeta.charset);
+            responseMeta.headers.put("Content-Length",responseMeta.body.getBytes().length+"");
+        }
+        responseMeta.headers.put("Connection","Close");
+        if(responseMeta.file==null){
+            logger.debug("[响应元数据]响应行:{},头部:{},主体:{}", responseMeta.status+" "+responseMeta.statusMessage,responseMeta.headers,responseMeta.body);
+        }else{
+            logger.debug("[响应元数据]响应行:{},头部:{},资源:{}", responseMeta.status+" "+responseMeta.statusMessage,responseMeta.headers,responseMeta.file.getAbsolutePath());
+        }
+    }
+
     /**处理请求*/
-    public void handleRequest(RequestMeta requestMeta,ResponseMeta responseMeta) throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException, IOException {
+    public void handleRequest(RequestMeta requestMeta,ResponseMeta responseMeta,SessionMeta sessionMeta) throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException, IOException {
         //查找静态路径
         File staticFile = new File(webapps+requestMeta.requestURI);
         if(staticFile.exists()&&staticFile.isFile()){
@@ -166,23 +178,53 @@ public class QuickServer {
             result = method.invoke(controller);
         }else{
             for(Parameter parameter:parameters){
-                if(parameter.getType().getName().equals("cn.schoolwow.quickserver.request.RequestMeta")){
-                    parameterList.add(requestMeta);
-                }else if(parameter.getType().getName().equals("cn.schoolwow.quickserver.response.ResponseMeta")){
-                    parameterList.add(responseMeta);
-                }else{
-                    RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
-                    if(requestParam!=null){
-                        String requestParameter = requestMeta.parameters.get(requestParam.value());
-                        if(requestParam.required()&&requestParameter==null){
-                            responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST);
-                            responseMeta.body = "请求参数["+requestParam.value()+"]不能为空!";
-                            return;
+                switch(parameter.getType().getName()){
+                    case "cn.schoolwow.quickserver.request.RequestMeta":{
+                        parameterList.add(requestMeta);
+                    }break;
+                    case "cn.schoolwow.quickserver.response.ResponseMeta":{
+                        parameterList.add(responseMeta);
+                    }break;
+                    case "cn.schoolwow.quickserver.session.SessionMeta":{
+                        parameterList.add(sessionMeta);
+                    }break;
+                    default:{
+                        //处理RequestParam
+                        {
+                            RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
+                            if(null!=requestParam){
+                                String requestParameter = requestMeta.parameters.get(requestParam.value());
+                                if(requestParam.required()&&requestParameter==null){
+                                    responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST);
+                                    responseMeta.body = "请求参数["+requestParam.value()+"]不能为空!";
+                                    return;
+                                }
+                                if(requestParameter==null){
+                                    requestParameter = requestParam.defaultValue();
+                                }
+                                parameterList.add(parameter.getType().getConstructor(String.class).newInstance(requestParameter));
+                            }
                         }
-                        if(requestParameter==null){
-                            requestParameter = requestParam.defaultValue();
+                        //处理RequestPart
+                        {
+                            RequestPart requestPart = parameter.getAnnotation(RequestPart.class);
+                            if(null!=requestPart){
+                                MultipartFile multipartFile = requestMeta.fileParameters.get(requestPart.name());
+                                if(requestPart.required()&&multipartFile==null){
+                                    responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST);
+                                    responseMeta.body = "请求参数["+requestPart.name()+"]不能为空!";
+                                    return;
+                                }
+                                parameterList.add(multipartFile);
+                            }
                         }
-                        parameterList.add(parameter.getType().getConstructor(String.class).newInstance(requestParameter));
+                        //处理RequestBody
+                        {
+                            RequestBody requestBody = parameter.getAnnotation(RequestBody.class);
+                            if(null!=requestBody){
+                                parameterList.add(requestMeta.body);
+                            }
+                        }
                     }
                 }
             }
@@ -193,12 +235,14 @@ public class QuickServer {
             responseMeta.response(ResponseMeta.HttpStatus.OK);
         }
         if(responseMeta.contentType==null){
-            responseMeta.contentType = "text/plain; charset="+responseMeta.charset;
+            responseMeta.contentType = "text/plain;";
         }
-        if(responseMeta.body==null){
-            responseMeta.body = result.toString();
-        }else{
-            responseMeta.body += result.toString();
+        if(result!=null){
+            if(responseMeta.body==null){
+                responseMeta.body = result.toString();
+            }else{
+                responseMeta.body += result.toString();
+            }
         }
     }
 }

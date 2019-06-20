@@ -1,7 +1,11 @@
 package cn.schoolwow.quickserver.response;
 
 import java.io.File;
+import java.io.OutputStream;
+import java.net.HttpCookie;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**http返回元信息*/
@@ -90,6 +94,8 @@ public class ResponseMeta {
     public String protocol;
     /**http头部*/
     public Map<String,String> headers = new HashMap<>();
+    /**Cookie列表*/
+    public List<HttpCookie> cookies = new ArrayList<>();
     /**body*/
     public String body;
     /**静态资源*/
@@ -100,6 +106,8 @@ public class ResponseMeta {
     public String contentType = "text/plain";
     /**主体长度*/
     public long contentLength;
+    /**原始输出流*/
+    public OutputStream outputStream;
 
     public void response(HttpStatus httpStatus){
         this.status = httpStatus.status;

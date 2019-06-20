@@ -80,11 +80,11 @@ public class ControllerUtil {
             throw new IllegalArgumentException(e.getMessage());
         }
         for (Class c : classList) {
+            String bathUrl = "";
             RequestMapping classRequestMapping = (RequestMapping) c.getDeclaredAnnotation(RequestMapping.class);
-            if(classRequestMapping==null){
-                continue;
+            if(classRequestMapping!=null){
+                bathUrl = classRequestMapping.value();
             }
-            String bathUrl = classRequestMapping.value();
 
             Method[] methods = c.getMethods();
             for(Method method:methods){

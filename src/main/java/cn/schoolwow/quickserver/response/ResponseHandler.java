@@ -9,6 +9,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.HttpCookie;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
@@ -27,6 +29,27 @@ public class ResponseHandler {
         for(Map.Entry<String,String> entry:responseMeta.headers.entrySet()){
             result.append(entry.getKey()+": "+entry.getValue()+"\r\n");
         }
+        List<HttpCookie> httpCookieList = responseMeta.cookies;
+        for(HttpCookie httpCookie:httpCookieList){
+            result.append("Set-Cookie: ");
+            result.append(httpCookie.getName()+"="+httpCookie.getValue()+";");
+            if(httpCookie.getMaxAge()>0){
+                result.append(" Max-Age="+httpCookie.getMaxAge()+";");
+            }
+            if(null!=httpCookie.getDomain()){
+                result.append(" Domain="+httpCookie.getDomain()+";");
+            }
+            if(null!=httpCookie.getPath()){
+                result.append(" Path="+httpCookie.getPath()+";");
+            }
+            if(httpCookie.getSecure()){
+                result.append(" Secure;");
+            }
+            if(httpCookie.isHttpOnly()){
+                result.append(" HttpOnly;");
+            }
+            result.append("\r\n");
+        }
         result.append("\r\n");
         outputStream.write(result.toString().getBytes());
 
@@ -41,7 +64,7 @@ public class ResponseHandler {
     /**处理压缩*/
     private static byte[] handleAcceptEncoding(RequestMeta requestMeta,ResponseMeta responseMeta) throws IOException {
         //文本类资源才需要压缩
-        if(!responseMeta.headers.get("Content-Type").startsWith("text/")){
+        if(!responseMeta.contentType.startsWith("text/")){
             return null;
         }
         if(QuickServerConfig.compressSupports==null){
