@@ -18,7 +18,7 @@ public class ResponseHandler {
     private static Logger logger = LoggerFactory.getLogger(ResponseHandler.class);
 
     /**根据ResponseMeta写入返回信息*/
-    public static void handleResponse(RequestMeta requestMeta,ResponseMeta responseMeta, OutputStream outputStream) throws IOException {
+    public static void handleResponse(RequestMeta requestMeta,ResponseMeta responseMeta) throws IOException {
         //处理压缩
         byte[] body = handleAcceptEncoding(requestMeta,responseMeta);
         if(body!=null){
@@ -51,30 +51,23 @@ public class ResponseHandler {
             result.append("\r\n");
         }
         result.append("\r\n");
-        outputStream.write(result.toString().getBytes());
+        responseMeta.outputStream.write(result.toString().getBytes());
 
         if(body==null){
-            writeBody(responseMeta,outputStream);
+            writeBody(responseMeta,responseMeta.outputStream);
         }else{
-            outputStream.write(body);
+            responseMeta.outputStream.write(body);
         }
-        outputStream.flush();
+        responseMeta.outputStream.flush();
     }
 
     /**处理压缩*/
     private static byte[] handleAcceptEncoding(RequestMeta requestMeta,ResponseMeta responseMeta) throws IOException {
         //文本类资源才需要压缩
-        if(!responseMeta.contentType.startsWith("text/")){
+        if(QuickServerConfig.compressSupports==null||!responseMeta.contentType.startsWith("text/")||requestMeta.headers.containsKey("accept-encoding")){
             return null;
         }
-        if(QuickServerConfig.compressSupports==null){
-            return null;
-        }
-        //判断是否支持压缩
         String acceptEncoding = requestMeta.headers.get("accept-encoding");
-        if(acceptEncoding==null){
-            return null;
-        }
         for(String supportCompress: QuickServerConfig.compressSupports){
             if(acceptEncoding.contains(supportCompress)){
                 responseMeta.headers.put("Content-Encoding",supportCompress);

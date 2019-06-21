@@ -1,6 +1,5 @@
 package cn.schoolwow.quickserver.request;
 
-import java.io.BufferedReader;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;

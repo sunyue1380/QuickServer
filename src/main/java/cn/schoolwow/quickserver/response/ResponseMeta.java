@@ -100,6 +100,8 @@ public class ResponseMeta {
     public String body;
     /**静态资源*/
     public File file;
+    /**转发*/
+    public String forward;
     /**默认编码*/
     public String charset = "utf-8";
     /**主体类型*/
@@ -108,6 +110,16 @@ public class ResponseMeta {
     public long contentLength;
     /**原始输出流*/
     public OutputStream outputStream;
+
+    public void redirect(String url){
+        this.status = HttpStatus.FOUND.status;
+        this.statusMessage = HttpStatus.FOUND.statusMessage;
+        this.headers.put("Location",url);
+    }
+
+    public void forward(String url){
+        this.forward = url;
+    }
 
     public void response(HttpStatus httpStatus){
         this.status = httpStatus.status;

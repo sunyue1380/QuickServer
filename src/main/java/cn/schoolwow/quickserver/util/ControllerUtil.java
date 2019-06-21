@@ -95,7 +95,11 @@ public class ControllerUtil {
                 String mappingUrl = bathUrl+methodRequestMapping.value();
                 requestMappingHandler.put(mappingUrl,method);
                 RequestMethod[] requestMethods = methodRequestMapping.method();
-                logger.info("[注册Controller][[{}],{}] onto {}",mappingUrl,requestMethods.length==0?"":"method="+requestMethods,method.toString());
+                if(requestMethods.length==0){
+                    logger.info("[注册Controller][{}] onto {}",mappingUrl,method.toString());
+                }else{
+                    logger.info("[注册Controller][{},method={}] onto {}",mappingUrl,requestMethods,method.toString());
+                }
             }
         }
     }

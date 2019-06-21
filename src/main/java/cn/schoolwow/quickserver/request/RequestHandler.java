@@ -1,9 +1,14 @@
 package cn.schoolwow.quickserver.request;
 
+import cn.schoolwow.quickserver.annotation.RequestHeader;
+import cn.schoolwow.quickserver.util.IOUtil;
 import cn.schoolwow.quickserver.util.RegExpUtil;
+import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.IOUtils;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -24,17 +29,22 @@ public class RequestHandler {
             StringBuffer httpHeaderBuffer = new StringBuffer();
             int b;
             while((b = requestMeta.inputStream.read())!=-1){
+                httpHeaderBuffer.append((char)b);
                 //连续两个换行时则停止循环 \r=>0x0D \n=>0x0A
                 if(b==CR){
                     byte[] bytes = new byte[3];
                     requestMeta.inputStream.read(bytes);
-                    httpHeaderBuffer.append(bytes[0]);
-                    if(bytes[0]==CR&&bytes[1]==LF&&bytes[2]==CR){
+                    if(bytes[0]==LF&&bytes[1]==CR&&bytes[2]==LF){
+                        httpHeaderBuffer.append((char)bytes[0]);
                         break;
+                    }else{
+                        httpHeaderBuffer.append((char)bytes[0]);
+                        httpHeaderBuffer.append((char)bytes[1]);
+                        httpHeaderBuffer.append((char)bytes[2]);
                     }
                 }
-                httpHeaderBuffer.append(b);
             }
+            logger.trace("[读取头部信息]{}",httpHeaderBuffer.toString());
             String[] headerLines = httpHeaderBuffer.toString().split("\r\n");
             //处理请求行
             {
@@ -82,6 +92,8 @@ public class RequestHandler {
                 }
             }
         }
+        //处理分块传输
+        handleTransferEncoding(requestMeta);
         //解析body
         if (requestMeta.contentType != null) {
             if(requestMeta.contentType.contains("multipart/form-data")){
@@ -91,8 +103,9 @@ public class RequestHandler {
                         ||requestMeta.contentType.startsWith("text/")){
                     int b;
                     StringBuffer bodyBuffer = new StringBuffer();
-                    while((b = requestMeta.inputStream.read())!=1){
-                        bodyBuffer.append(b);
+                    for(int i=0;i<requestMeta.contentLength;i++){
+                        b = requestMeta.inputStream.read();
+                        bodyBuffer.append((char)b);
                     }
                     requestMeta.body = new String(bodyBuffer.toString().getBytes(),requestMeta.charset);
                 }
@@ -106,37 +119,44 @@ public class RequestHandler {
         return requestMeta;
     }
 
+    /**处理Transfer-Encoding*/
+    private static void handleTransferEncoding(RequestMeta requestMeta) throws IOException {
+        //分块读取
+        if(!requestMeta.headers.containsKey("transfer-encoding")){
+            return;
+        }
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        while(true){
+            String line = IOUtil.readLine(requestMeta.inputStream);
+            int length = Integer.parseInt(line,16);
+            if(length==0){
+                break;
+            }
+            byte[] bytes = new byte[length];
+            requestMeta.inputStream.read(bytes);
+            baos.write(bytes);
+            requestMeta.inputStream.read();//CR
+            requestMeta.inputStream.read();//LF
+        }
+        baos.flush();
+        byte[] bytes = baos.toByteArray();
+        baos.close();
+        requestMeta.inputStream = new BufferedInputStream(new ByteArrayInputStream(bytes));
+        logger.debug("[处理分块传输]总大小:{}",bytes.length);
+    }
+
     /**处理文件上传*/
     private static void handleMultipartFormData(RequestMeta requestMeta) throws IOException {
-        logger.debug("[boundary]boundary:{}",requestMeta.boundary);
+        logger.trace("[boundary]boundary:{}",requestMeta.boundary);
         byte[] splitBoundary = ("--"+requestMeta.boundary).getBytes();
         int b;
-        //读取分隔符
-        {
-            while((b = requestMeta.inputStream.read())!=-1){
-                if(b==CR){
-                    b = requestMeta.inputStream.read();
-                    if(b==LF){
-                        break;
-                    }
-                }
-            }
-        }
+        //读取第一行
+        IOUtil.readLine(requestMeta.inputStream);
         while(true){
             MultipartFile multipartFile= new MultipartFile();
-            StringBuffer lineBuffer = new StringBuffer();
             //Content-Disposition
             {
-                while((b = requestMeta.inputStream.read())!=-1){
-                    if(b==CR){
-                        b = requestMeta.inputStream.read();
-                        if(b==LF){
-                            break;
-                        }
-                    }
-                    lineBuffer.append(b);
-                }
-                String contentDisposition = lineBuffer.toString();
+                String contentDisposition = IOUtil.readLine(requestMeta.inputStream);
                 multipartFile.name = RegExpUtil.extract(contentDisposition,"name=\"(?<name>\\w+)\"","name");;
                 if(contentDisposition.contains("filename=")){
                     multipartFile.originalFilename = RegExpUtil.extract(contentDisposition,"filename=\"(?<filename>.*)\"$","filename");
@@ -144,24 +164,20 @@ public class RequestHandler {
             }
             //额外行
             {
-                lineBuffer.setLength(0);
-                while((b = requestMeta.inputStream.read())!=-1){
-                    lineBuffer.append(b);
-                    //连续两个换行时则停止循环 \r=>0x0D \n=>0x0A
-                    if(b==CR){
-                        byte[] bytes = new byte[3];
-                        requestMeta.inputStream.read(bytes);
-                        lineBuffer.append(bytes[0]);
-                        if(bytes[0]==CR&&bytes[1]==LF&&bytes[2]==CR){
+                StringBuffer extraHeaderBuffer = new StringBuffer();
+                String line = IOUtil.readLine(requestMeta.inputStream);
+                while(!line.equals("")){
+                    extraHeaderBuffer.append(line);
+                    line = IOUtil.readLine(requestMeta.inputStream);
+                }
+                if(extraHeaderBuffer.length()>0){
+                    logger.trace("[额外头部]{}",extraHeaderBuffer.toString());
+                    String[] extraHeaders = extraHeaderBuffer.toString().split("\r\n");
+                    for(String extraHeader:extraHeaders){
+                        if(extraHeader.startsWith("Content-Type")){
+                            multipartFile.contentType = extraHeader.substring(extraHeader.indexOf(":")+1);
                             break;
                         }
-                    }
-                }
-                String[] extraHeaders = lineBuffer.toString().split("\r\n");
-                for(String extraHeader:extraHeaders){
-                    if(extraHeader.startsWith("Content-Type")){
-                        multipartFile.contentType = extraHeader.substring(extraHeader.indexOf(":")+1);
-                        break;
                     }
                 }
             }
@@ -169,18 +185,31 @@ public class RequestHandler {
             {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 while((b = requestMeta.inputStream.read())!=-1){
-                    if(b==splitBoundary[0]){
-                        byte[] bytes = new byte[splitBoundary.length-1];
+                    if(b==CR){
+                        //判断下一个字符是否是回车
+                        b = requestMeta.inputStream.read();
+                        if(b!=LF){
+                            baos.write(CR);
+                            baos.write(b);
+                            continue;
+                        }
+                        //判断是否是分隔符
+                        byte[] bytes = new byte[splitBoundary.length];
                         requestMeta.inputStream.read(bytes);
                         boolean isBoundaryEnd = true;
                         for(int i=0;i<bytes.length;i++){
-                            if(bytes[i]!=splitBoundary[i+1]){
+                            if(bytes[i]!=splitBoundary[i]){
                                 isBoundaryEnd = false;
                                 break;
                             }
                         }
                         if(isBoundaryEnd){
                             break;
+                        }else{
+                            baos.write(CR);
+                            baos.write(LF);
+                            baos.write(bytes);
+                            continue;
                         }
                     }
                     baos.write(b);
@@ -194,7 +223,7 @@ public class RequestHandler {
                     multipartFile.size = multipartFile.bytes.length;
                     multipartFile.isEmpty = multipartFile.bytes.length==0;
                     requestMeta.fileParameters.put(multipartFile.name,multipartFile);
-                    logger.debug("[添加文件参数]{}:{},文件大小:{},",multipartFile.name,multipartFile,multipartFile.bytes.length);
+                    logger.trace("[添加文件参数]字段名:{},原始文件名:{},文件大小:{}",multipartFile.name,multipartFile.originalFilename,multipartFile.bytes.length);
                 }
                 baos.close();
             }

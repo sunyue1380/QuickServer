@@ -63,4 +63,23 @@ public class QuickServerTest {
                 .execute();
         Assert.assertEquals("true",response.body());
     }
+
+    @Test
+    public void testRedirect() throws IOException {
+        Response response= QuickHttp.connect(host+"/redirect")
+                .method(Connection.Method.GET)
+                .execute();
+        System.out.println(response.url());
+        Assert.assertEquals(host+"/redirect.html",response.url());
+    }
+
+    @Test
+    public void testForward() throws IOException {
+        Response response= QuickHttp.connect(host+"/forward")
+                .method(Connection.Method.GET)
+                .execute();
+        System.out.println(response.url());
+        Assert.assertEquals(host+"/forward",response.url());
+        System.out.println(response.body());
+    }
 }
