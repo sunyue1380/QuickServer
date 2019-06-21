@@ -10,12 +10,15 @@ import java.lang.reflect.Method;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class ControllerUtil {
     private static Logger logger = LoggerFactory.getLogger(ControllerUtil.class);
     private static Map<String, Method> requestMappingHandler = new HashMap<>();
+    /**缓存跨域头*/
+    public static Map<String, Map<String,String>> crossOriginMap = new ConcurrentHashMap<>();
 
     public static Method getMethod(String requestUrl){
         return requestMappingHandler.get(requestUrl);

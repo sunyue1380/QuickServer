@@ -69,7 +69,6 @@ public class QuickServerTest {
         Response response= QuickHttp.connect(host+"/redirect")
                 .method(Connection.Method.GET)
                 .execute();
-        System.out.println(response.url());
         Assert.assertEquals(host+"/redirect.html",response.url());
     }
 
@@ -78,8 +77,16 @@ public class QuickServerTest {
         Response response= QuickHttp.connect(host+"/forward")
                 .method(Connection.Method.GET)
                 .execute();
-        System.out.println(response.url());
         Assert.assertEquals(host+"/forward",response.url());
-        System.out.println(response.body());
+    }
+
+    @Test
+    public void testCrossOrigin() throws IOException {
+        Response response = QuickHttp.connect(host+"/crossOrigin")
+                .method(Connection.Method.GET)
+                .header("origin",host)
+                .data("username","quickserver")
+                .execute();
+        Assert.assertEquals("true",response.body());
     }
 }

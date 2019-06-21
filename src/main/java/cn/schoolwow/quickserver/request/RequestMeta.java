@@ -1,6 +1,7 @@
 package cn.schoolwow.quickserver.request;
 
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,8 +34,13 @@ public class RequestMeta {
     public String contentType;
     /**主体长度*/
     public long contentLength;
+    /**origin头部*/
+    public String origin;
     /**http头部*/
     public String connection;
     /**原始输入流*/
     public InputStream inputStream;
+
+    /**调用方法*/
+    public Method invokeMethod;
 }

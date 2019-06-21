@@ -73,15 +73,20 @@ public class RequestHandler {
                     String name = headerLines[i].substring(0, headerLines[i].indexOf(":")).toLowerCase();
                     String value = headerLines[i].substring(headerLines[i].indexOf(":") + 2);
                     requestMeta.headers.put(name, value);
-                    if ("content-type".equalsIgnoreCase(name)) {
-                        requestMeta.contentType = value;
-                        handleContentType(value,requestMeta);
-                    }
-                    if ("content-length".equalsIgnoreCase(name)) {
-                        requestMeta.contentLength = Long.parseLong(value);
-                    }
-                    if ("Connection".equalsIgnoreCase(name)) {
-                        requestMeta.connection = value;
+                    switch(name.toLowerCase()){
+                        case "content-type":{
+                            requestMeta.contentType = value;
+                            handleContentType(value,requestMeta);
+                        }break;
+                        case "content-length":{
+                            requestMeta.contentLength = Long.parseLong(value);
+                        }break;
+                        case "connection":{
+                            requestMeta.connection = value;
+                        }break;
+                        case "origin":{
+                            requestMeta.origin = value;
+                        }break;
                     }
                 }
             }

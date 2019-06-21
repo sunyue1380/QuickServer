@@ -85,4 +85,13 @@ public class IndexController {
         logger.info("[转发]目标:{},","/redirect.html");
         responseMeta.forward("/redirect.html");
     }
+
+    @RequestMapping(value = "/crossOrigin",method = {RequestMethod.GET,RequestMethod.POST})
+    @CrossOrigin
+    public String crossOrigin(
+            @RequestParam(name = "username") String username
+    ){
+        logger.info("[跨域请求]用户名:{}",username);
+        return "true";
+    }
 }
