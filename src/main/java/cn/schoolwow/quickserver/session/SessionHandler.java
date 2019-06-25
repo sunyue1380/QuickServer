@@ -36,7 +36,7 @@ public class SessionHandler {
 
     /**注销会话*/
     public static void invalidate(String sessionId){
+        logger.debug("[销毁会话]会话id:{}",sessionId);
         sessionMap.remove(sessionId);
     }
-
 }

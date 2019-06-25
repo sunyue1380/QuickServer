@@ -146,7 +146,7 @@ public class QuickServer {
         RequestMapping methodRequestMapping = method.getAnnotation(RequestMapping.class);
         RequestMethod[] requestMethods = methodRequestMapping.method();
         boolean support = false;
-        if(requestMethods.length==0||(requestMeta.origin!=null&&"OPTIONS".equalsIgnoreCase(requestMeta.method))){
+        if(requestMethods.length==0||(requestMeta.origin!=null&&RequestMethod.OPTIONS.name().equalsIgnoreCase(requestMeta.method))){
             support = true;
         }else{
             for(RequestMethod requestMethod:requestMethods){
@@ -163,7 +163,7 @@ public class QuickServer {
         //处理跨域请求
         handleCrossOrigin(requestMeta,responseMeta);
         //判断是否是跨域预检请求
-        if(requestMeta.origin!=null&&"OPTIONS".equalsIgnoreCase(requestMeta.method)){
+        if(requestMeta.origin!=null&&RequestMethod.OPTIONS.name().equalsIgnoreCase(requestMeta.method)){
             responseMeta.status = 200;
             responseMeta.statusMessage = "OK";
             return;

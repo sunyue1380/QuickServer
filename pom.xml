@@ -6,9 +6,16 @@
 
     <groupId>cn.schoolwow</groupId>
     <artifactId>QuickServer</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
 
     <name>QuickServer</name>
+    <url>https://github.com/sunyue1380/QuickServer</url>
+
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -16,25 +23,45 @@
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
+    <licenses>
+        <license>
+            <name>GNU General Public License</name>
+            <url>http://www.gnu.org/licenses/gpl-3.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>sunyue1380</name>
+            <email>648823596@qq.com</email>
+            <organization>schoolwow</organization>
+            <organizationUrl>http://blog.schoolwow.cn</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>
+            scm:git:https://github.com/sunyue1380/QuickServer.git
+        </connection>
+        <developerConnection>
+            scm:git:https://github.com/sunyue1380/QuickServer.git
+        </developerConnection>
+        <url>https://github.com/sunyue1380/QuickServer</url>
+        <tag>1.0.0</tag>
+    </scm>
+
     <dependencies>
-        <dependency>
-            <groupId>cn.schoolwow</groupId>
-            <artifactId>QuickHttp</artifactId>
-            <version>1.3-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.2.3</version>
         </dependency>
-        <!--
-            <dependency>
-              <groupId>com.alibaba</groupId>
-              <artifactId>fastjson</artifactId>
-              <version>1.2.38</version>
-            </dependency>
-        -->
+        <dependency>
+            <groupId>cn.schoolwow</groupId>
+            <artifactId>QuickHttp</artifactId>
+            <version>1.3</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -43,4 +70,72 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <!-- 打包的 -P参数 -->
+            <id>release</id>
+            <build>
+                <plugins>
+                    <!-- Source -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.2.1</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- Javadoc -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.9.1</version>
+                        <configuration>
+                            <additionalparam>-Xdoclint:none</additionalparam>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- GPG  打包插件-->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>sonatype</id>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                </snapshotRepository>
+                <repository>
+                    <id>sonatype</id>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+            </distributionManagement>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+    </profiles>
 </project>
