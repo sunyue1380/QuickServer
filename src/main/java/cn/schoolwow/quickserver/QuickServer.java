@@ -131,57 +131,89 @@ public class QuickServer {
 
     /**处理请求*/
     public void handleRequest(RequestMeta requestMeta,ResponseMeta responseMeta,SessionMeta sessionMeta) throws Exception {
-        handleStaticFile(requestMeta,responseMeta);
-        if(responseMeta.file!=null){
-            return;
+        //处理静态资源
+        {
+            handleStaticFile(requestMeta,responseMeta);
+            if(responseMeta.file!=null){
+                return;
+            }
         }
         //查找请求路径
-        Method method = ControllerUtil.getMethod(requestMeta.requestURI);
-        if(method==null){
-            responseMeta.response(ResponseMeta.HttpStatus.NOT_FOUND);
-            return;
+        {
+            Method method = ControllerUtil.getMethod(requestMeta.requestURI);
+            if(method==null){
+                responseMeta.response(ResponseMeta.HttpStatus.NOT_FOUND);
+                return;
+            }
+            requestMeta.invokeMethod = method;
         }
-        requestMeta.invokeMethod = method;
         //判断是否支持该方法
-        RequestMapping methodRequestMapping = method.getAnnotation(RequestMapping.class);
-        RequestMethod[] requestMethods = methodRequestMapping.method();
-        boolean support = false;
-        if(requestMethods.length==0||(requestMeta.origin!=null&&RequestMethod.OPTIONS.name().equalsIgnoreCase(requestMeta.method))){
-            support = true;
-        }else{
-            for(RequestMethod requestMethod:requestMethods){
-                if(requestMethod.name().equals(requestMeta.method)){
-                    support = true;
-                    break;
+        {
+            RequestMapping methodRequestMapping = requestMeta.invokeMethod.getAnnotation(RequestMapping.class);
+            RequestMethod[] requestMethods = methodRequestMapping.method();
+            boolean support = false;
+            if(requestMethods.length==0||(requestMeta.origin!=null&&RequestMethod.OPTIONS.name().equalsIgnoreCase(requestMeta.method))){
+                support = true;
+            }else{
+                for(RequestMethod requestMethod:requestMethods){
+                    if(requestMethod.name().equals(requestMeta.method)){
+                        support = true;
+                        break;
+                    }
+                }
+            }
+            if(!support){
+                responseMeta.response(ResponseMeta.HttpStatus.METHOD_NOT_ALLOWED);
+                return;
+            }
+        }
+        //处理Basic Auth
+        {
+            BasicAuth basicAuth = requestMeta.invokeMethod.getAnnotation(BasicAuth.class);
+            if(basicAuth==null){
+                basicAuth = requestMeta.invokeMethod.getDeclaringClass().getAnnotation(BasicAuth.class);
+            }
+            if(basicAuth!=null){
+                if(requestMeta.authorization==null){
+                    responseMeta.response(ResponseMeta.HttpStatus.UNAUTHORIZED);
+                    responseMeta.headers.put("WWW-Authenticate","Basic realm=\""+basicAuth.realm()+"\"");
+                    return;
+                }
+                String auth = requestMeta.authorization.substring(requestMeta.authorization.indexOf("Basic ")+6);
+                String targetAuth = new String(Base64.getEncoder().encode((basicAuth.username()+":"+basicAuth.password()).getBytes()));
+                if(!targetAuth.equals(auth)){
+                    responseMeta.response(ResponseMeta.HttpStatus.UNAUTHORIZED);
+                    responseMeta.headers.put("WWW-Authenticate","Basic realm=\""+basicAuth.realm()+"\"");
+                    return;
                 }
             }
         }
-        if(!support){
-            responseMeta.response(ResponseMeta.HttpStatus.METHOD_NOT_ALLOWED);
-            return;
-        }
         //处理跨域请求
-        handleCrossOrigin(requestMeta,responseMeta);
-        //判断是否是跨域预检请求
-        if(requestMeta.origin!=null&&RequestMethod.OPTIONS.name().equalsIgnoreCase(requestMeta.method)){
-            responseMeta.status = 200;
-            responseMeta.statusMessage = "OK";
-            return;
+        {
+            handleCrossOrigin(requestMeta,responseMeta);
+            //判断是否是跨域预检请求
+            if(requestMeta.origin!=null&&RequestMethod.OPTIONS.name().equalsIgnoreCase(requestMeta.method)){
+                responseMeta.status = 200;
+                responseMeta.statusMessage = "OK";
+                return;
+            }
         }
         //方法调用
-        logger.debug("[调用方法]请求路径:[{}],调用方法:{}",requestMeta.method+" "+requestMeta.requestURI,method.toString());
-        Object result = handleInvokeMethod(requestMeta,responseMeta,sessionMeta);
-        if(responseMeta.status==0){
-            responseMeta.response(ResponseMeta.HttpStatus.OK);
-        }
-        if(responseMeta.contentType==null){
-            responseMeta.contentType = "text/plain;";
-        }
-        if(result!=null){
-            if(responseMeta.body==null){
-                responseMeta.body = result.toString();
-            }else{
-                responseMeta.body += result.toString();
+        {
+            logger.debug("[调用方法]请求路径:[{}],调用方法:{}",requestMeta.method+" "+requestMeta.requestURI,requestMeta.invokeMethod.toString());
+            Object result = handleInvokeMethod(requestMeta,responseMeta,sessionMeta);
+            if(responseMeta.status==0){
+                responseMeta.response(ResponseMeta.HttpStatus.OK);
+            }
+            if(responseMeta.contentType==null){
+                responseMeta.contentType = "text/plain;";
+            }
+            if(result!=null){
+                if(responseMeta.body==null){
+                    responseMeta.body = result.toString();
+                }else{
+                    responseMeta.body += result.toString();
+                }
             }
         }
     }

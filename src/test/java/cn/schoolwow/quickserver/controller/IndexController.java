@@ -9,6 +9,7 @@ import cn.schoolwow.quickserver.util.QuickServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.print.attribute.standard.MediaSize;
 import java.io.File;
 
 public class IndexController {
@@ -92,6 +93,15 @@ public class IndexController {
             @RequestParam(name = "username") String username
     ){
         logger.info("[跨域请求]用户名:{}",username);
+        return "true";
+    }
+
+    @RequestMapping(value = "/basicAuth",method = {RequestMethod.GET,RequestMethod.POST})
+    @BasicAuth(username = "quickserver",password = "123456")
+    public String basicAuth(
+            @RequestHeader(name = "Authorization") String authorization
+    ){
+        logger.info("[basicAuth]Authorization:{}",authorization);
         return "true";
     }
 }

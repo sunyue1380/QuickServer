@@ -84,6 +84,9 @@ public class RequestHandler {
                         case "origin":{
                             requestMeta.origin = value;
                         }break;
+                        case "authorization":{
+                            requestMeta.authorization = value;
+                        }break;
                     }
                 }
             }

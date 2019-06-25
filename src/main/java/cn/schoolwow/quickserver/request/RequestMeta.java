@@ -38,6 +38,8 @@ public class RequestMeta {
     public String origin;
     /**http头部*/
     public String connection;
+    /**认证头*/
+    public String authorization;
     /**原始输入流*/
     public InputStream inputStream;
 
