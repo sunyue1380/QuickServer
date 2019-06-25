@@ -23,6 +23,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 public class QuickServer {
     Logger logger = LoggerFactory.getLogger(QuickServer.class);
+    private static SimpleDateFormat sdf = new SimpleDateFormat();
     private int port = 9000;
     private ThreadPoolExecutor threadPoolExecutor;
     private String webapps;
@@ -78,7 +80,7 @@ public class QuickServer {
         logger.debug("[webapp]目录地址:{}",webapps);
 
         ServerSocket serverSocket = new ServerSocket(this.port);
-        logger.debug("[服务已启动]地址:http://127.0.0.1:{}",port);
+        logger.info("[服务已启动]地址:http://127.0.0.1:{}",port);
         while(true){
             final Socket socket = serverSocket.accept();
             threadPoolExecutor.execute(()->{
@@ -252,7 +254,40 @@ public class QuickServer {
                             if(requestParameter==null){
                                 requestParameter = requestParam.defaultValue();
                             }
-                            parameterList.add(parameter.getType().getConstructor(String.class).newInstance(requestParameter));
+
+                            if(parameter.getType().isPrimitive()){
+                                switch(parameterType){
+                                    case "boolean":{
+                                        parameterList.add(Boolean.parseBoolean(requestParameter));
+                                    };break;
+                                    case "byte":{
+                                        parameterList.add(Byte.parseByte(requestParameter));
+                                    };break;
+                                    case "char":{
+                                        parameterList.add(requestParameter.charAt(0));
+                                    };break;
+                                    case "short":{
+                                        parameterList.add(Short.parseShort(requestParameter));
+                                    };break;
+                                    case "int":{
+                                        parameterList.add(Integer.parseInt(requestParameter));
+                                    };break;
+                                    case "long":{
+                                        parameterList.add(Long.parseLong(requestParameter));
+                                    };break;
+                                    case "float":{
+                                        parameterList.add(Float.parseFloat(requestParameter));
+                                    };break;
+                                    case "double":{
+                                        parameterList.add(Double.parseDouble(requestParameter));
+                                    };break;
+                                }
+                            }else if("java.util.Date".equals(parameterType)){
+                                sdf.applyPattern(requestParam.pattern());
+                                parameterList.add(sdf.parse(requestParameter));
+                            }else{
+                                parameterList.add(parameter.getType().getConstructor(String.class).newInstance(requestParameter));
+                            }
                         }
                     }
                     //处理RequestPart

@@ -3,14 +3,13 @@ package cn.schoolwow.quickserver.controller;
 import cn.schoolwow.quickserver.annotation.*;
 import cn.schoolwow.quickserver.request.MultipartFile;
 import cn.schoolwow.quickserver.response.ResponseMeta;
-import cn.schoolwow.quickserver.session.SessionHandler;
 import cn.schoolwow.quickserver.session.SessionMeta;
 import cn.schoolwow.quickserver.util.QuickServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.print.attribute.standard.MediaSize;
 import java.io.File;
+import java.util.Date;
 
 public class IndexController {
     private Logger logger = LoggerFactory.getLogger(IndexController.class);
@@ -102,6 +101,25 @@ public class IndexController {
             @RequestHeader(name = "Authorization") String authorization
     ){
         logger.info("[basicAuth]Authorization:{}",authorization);
+        return "true";
+    }
+
+    @RequestMapping(value = "/requestBody",method = {RequestMethod.POST})
+    public String requestBody(
+            @RequestBody String body
+    ){
+        logger.info("[requestBody]requestBody:{}",body);
+        return "true";
+    }
+
+    @RequestMapping(value = "/parameterCast",method = {RequestMethod.POST})
+    public String parameterCast(
+            @RequestParam(name = "age") int age,
+            @RequestParam(name = "size") long size,
+            @RequestParam(name = "phone") String phone,
+            @RequestParam(name = "time",pattern = "yyyy-MM-dd") Date date
+    ){
+        logger.info("[参数类型转换]age:{},size:{},phone:{},time:{}",age,size,phone,date);
         return "true";
     }
 }

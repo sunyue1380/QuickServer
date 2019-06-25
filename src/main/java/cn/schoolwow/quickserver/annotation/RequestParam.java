@@ -14,4 +14,6 @@ public @interface RequestParam {
     boolean required() default true;
     /**参数默认值*/
     String defaultValue() default "";
+    /**日期格式*/
+    String pattern() default "";
 }

@@ -89,4 +89,25 @@ public class QuickServerTest {
                 .execute();
         Assert.assertEquals("true",response.body());
     }
+
+    @Test
+    public void testRequestBody() throws IOException {
+        Response response = QuickHttp.connect(host+"/requestBody")
+                .method(Connection.Method.POST)
+                .requestBody("quickserver requestBody")
+                .execute();
+        Assert.assertEquals("true",response.body());
+    }
+
+    @Test
+    public void testParameterCast() throws IOException {
+        Response response = QuickHttp.connect(host+"/parameterCast")
+                .method(Connection.Method.POST)
+                .data("age","10")
+                .data("size","10000")
+                .data("phone","123456789")
+                .data("time","2019-06-25")
+                .execute();
+        Assert.assertEquals("true",response.body());
+    }
 }
