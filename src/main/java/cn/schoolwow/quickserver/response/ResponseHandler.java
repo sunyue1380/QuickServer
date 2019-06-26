@@ -18,7 +18,7 @@ public class ResponseHandler {
     private static Logger logger = LoggerFactory.getLogger(ResponseHandler.class);
 
     /**根据ResponseMeta写入返回信息*/
-    public static void handleResponse(RequestMeta requestMeta,ResponseMeta responseMeta) throws IOException {
+    public static void handleResponse(RequestMeta requestMeta, ResponseMeta responseMeta) throws IOException {
         //处理压缩
         byte[] body = handleAcceptEncoding(requestMeta,responseMeta);
         if(body!=null){

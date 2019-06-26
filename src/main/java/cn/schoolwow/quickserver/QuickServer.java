@@ -1,6 +1,8 @@
 package cn.schoolwow.quickserver;
 
 import cn.schoolwow.quickserver.annotation.*;
+import cn.schoolwow.quickserver.domain.Filter;
+import cn.schoolwow.quickserver.domain.Request;
 import cn.schoolwow.quickserver.request.MultipartFile;
 import cn.schoolwow.quickserver.request.RequestHandler;
 import cn.schoolwow.quickserver.request.RequestMeta;
@@ -8,6 +10,7 @@ import cn.schoolwow.quickserver.response.ResponseHandler;
 import cn.schoolwow.quickserver.response.ResponseMeta;
 import cn.schoolwow.quickserver.session.SessionHandler;
 import cn.schoolwow.quickserver.session.SessionMeta;
+import cn.schoolwow.quickserver.util.AntPatternUtil;
 import cn.schoolwow.quickserver.util.ControllerUtil;
 import cn.schoolwow.quickserver.util.QuickServerConfig;
 import org.slf4j.Logger;
@@ -17,7 +20,6 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -84,19 +86,19 @@ public class QuickServer {
         while(true){
             final Socket socket = serverSocket.accept();
             threadPoolExecutor.execute(()->{
+                final RequestMeta requestMeta = new RequestMeta();
+                final ResponseMeta responseMeta = new ResponseMeta();
                 try {
                     //处理输入流
-                    RequestMeta requestMeta = new RequestMeta();
                     requestMeta.inputStream = new BufferedInputStream(socket.getInputStream());
                     RequestHandler.parseRequest(requestMeta);
                     //处理输出流
-                    ResponseMeta responseMeta = new ResponseMeta();
                     responseMeta.protocol = requestMeta.protocol;
                     responseMeta.outputStream = new BufferedOutputStream(socket.getOutputStream());
                     SessionMeta sessionMeta = SessionHandler.handleRequest(requestMeta,responseMeta);
                     handleRequest(requestMeta,responseMeta,sessionMeta);
                     handleResponse(requestMeta,responseMeta,sessionMeta);
-
+                    //输出返回信息到流中
                     ResponseHandler.handleResponse(requestMeta,responseMeta);
                     requestMeta.inputStream.close();
                     responseMeta.outputStream.close();
@@ -104,6 +106,13 @@ public class QuickServer {
                     logger.info("[请求完毕]======================================================");
                 } catch (Exception e) {
                     e.printStackTrace();
+                    try {
+                        responseMeta.response(ResponseMeta.HttpStatus.INTERNAL_SERVER_ERROR);
+                        ResponseHandler.handleResponse(requestMeta,responseMeta);
+                        socket.close();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
                 }
             });
         }
@@ -116,7 +125,6 @@ public class QuickServer {
             requestMeta.requestURI = responseMeta.forward;
             handleRequest(requestMeta,responseMeta,sessionMeta);
         }
-
         if(responseMeta.body!=null){
             responseMeta.headers.put("Content-Type",responseMeta.contentType+"; charset="+responseMeta.charset);
             responseMeta.headers.put("Content-Length",responseMeta.body.getBytes().length+"");
@@ -129,10 +137,38 @@ public class QuickServer {
         }else{
             logger.debug("[响应元数据]响应行:{},头部:{},资源:{}", responseMeta.status+" "+responseMeta.statusMessage,responseMeta.headers,responseMeta.file.getAbsolutePath());
         }
+        for(Filter filter: ControllerUtil.filterList){
+            if(AntPatternUtil.matchFilter(requestMeta.requestURI,filter)){
+                filter.handlerInterceptor.afterCompletion(requestMeta,responseMeta,sessionMeta,requestMeta.invokeMethod);
+            }
+        }
     }
 
     /**处理请求*/
     public void handleRequest(RequestMeta requestMeta,ResponseMeta responseMeta,SessionMeta sessionMeta) throws Exception {
+        //初始化过滤器
+        {
+            for(Filter filter:ControllerUtil.filterList){
+                if(AntPatternUtil.matchFilter(requestMeta.requestURI,filter)){
+                    filter.handlerInterceptor = filter.handlerInterceptorClass.newInstance();
+                }
+            }
+        }
+        //初始化Method
+        {
+            Request request = ControllerUtil.requestMappingHandler.get(requestMeta.requestURI);
+            if(request!=null){
+                requestMeta.invokeMethod = request.method;
+            }
+        }
+        //TODO 按照匹配模式长度进行顺序执行
+        for(Filter filter:ControllerUtil.filterList){
+            if(AntPatternUtil.matchFilter(requestMeta.requestURI,filter)){
+                if(!filter.handlerInterceptor.preHandle(requestMeta,responseMeta,sessionMeta,requestMeta.invokeMethod)){
+                    return;
+                }
+            }
+        }
         //处理静态资源
         {
             handleStaticFile(requestMeta,responseMeta);
@@ -140,14 +176,12 @@ public class QuickServer {
                 return;
             }
         }
-        //查找请求路径
+        //判断请求路径
         {
-            Method method = ControllerUtil.getMethod(requestMeta.requestURI);
-            if(method==null){
+            if(requestMeta.invokeMethod==null){
                 responseMeta.response(ResponseMeta.HttpStatus.NOT_FOUND);
                 return;
             }
-            requestMeta.invokeMethod = method;
         }
         //判断是否支持该方法
         {
@@ -201,9 +235,10 @@ public class QuickServer {
             }
         }
         //方法调用
+        Object result = null;
         {
             logger.debug("[调用方法]请求路径:[{}],调用方法:{}",requestMeta.method+" "+requestMeta.requestURI,requestMeta.invokeMethod.toString());
-            Object result = handleInvokeMethod(requestMeta,responseMeta,sessionMeta);
+            result = handleInvokeMethod(requestMeta,responseMeta,sessionMeta);
             if(responseMeta.status==0){
                 responseMeta.response(ResponseMeta.HttpStatus.OK);
             }
@@ -216,6 +251,13 @@ public class QuickServer {
                 }else{
                     responseMeta.body += result.toString();
                 }
+            }
+        }
+        //处理过滤器
+        //TODO 按照匹配模式长度进行顺序执行
+        for(Filter filter: ControllerUtil.filterList){
+            if(AntPatternUtil.matchFilter(requestMeta.requestURI,filter)){
+                filter.handlerInterceptor.postHandle(requestMeta,responseMeta,sessionMeta,requestMeta.invokeMethod,result);
             }
         }
     }
