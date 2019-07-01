@@ -47,8 +47,13 @@ public class QuickServer {
         return this;
     }
 
-    public QuickServer controller(String packageName){
-        ControllerUtil.register(packageName);
+    public QuickServer scan(String packageName){
+        ControllerUtil.scan(packageName);
+        return this;
+    }
+
+    public QuickServer register(Class _class){
+        ControllerUtil.register(_class);
         return this;
     }
 
@@ -80,6 +85,8 @@ public class QuickServer {
             webapps = new File(".").getAbsolutePath();
         }
         logger.debug("[webapp]目录地址:{}",webapps);
+        //注入依赖
+        ControllerUtil.refresh();
 
         ServerSocket serverSocket = new ServerSocket(this.port);
         logger.info("[服务已启动]地址:http://127.0.0.1:{}",port);
@@ -150,7 +157,7 @@ public class QuickServer {
         {
             for(Filter filter:ControllerUtil.filterList){
                 if(AntPatternUtil.matchFilter(requestMeta.requestURI,filter)){
-                    filter.handlerInterceptor = filter.handlerInterceptorClass.newInstance();
+                    filter.handlerInterceptor = ControllerUtil.getInterceptor(filter.handlerInterceptorClass);
                 }
             }
         }
@@ -264,7 +271,7 @@ public class QuickServer {
 
     /**处理方法调用*/
     private Object handleInvokeMethod(RequestMeta requestMeta,ResponseMeta responseMeta,SessionMeta sessionMeta) throws Exception {
-        Object controller = requestMeta.invokeMethod.getDeclaringClass().newInstance();
+        Object controller = ControllerUtil.requestMappingHandler.get(requestMeta.requestURI).instance;
         Parameter[] parameters = requestMeta.invokeMethod.getParameters();
         if(parameters.length==0){
             return requestMeta.invokeMethod.invoke(controller);

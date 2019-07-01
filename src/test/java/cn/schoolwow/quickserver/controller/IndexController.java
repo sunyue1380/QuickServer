@@ -1,30 +1,32 @@
 package cn.schoolwow.quickserver.controller;
 
+import cn.schoolwow.quickbeans.annotation.Component;
 import cn.schoolwow.quickserver.annotation.*;
 import cn.schoolwow.quickserver.request.MultipartFile;
 import cn.schoolwow.quickserver.response.ResponseMeta;
+import cn.schoolwow.quickserver.service.IndexService;
 import cn.schoolwow.quickserver.session.SessionMeta;
 import cn.schoolwow.quickserver.util.QuickServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Resource;
 import java.io.File;
 import java.util.Date;
 
+@Component
 public class IndexController {
     private Logger logger = LoggerFactory.getLogger(IndexController.class);
+    @Resource
+    private IndexService indexService;
+
     @RequestMapping(value = "/register",method = RequestMethod.POST)
     public boolean register(
             @RequestParam(name = "username") String username,
             @RequestParam(name = "password") String password
     ){
         logger.info("[注册用户]用户名:{},密码:{}",username,password);
-        if("quickserver".equalsIgnoreCase(username)&&
-        "123456".equalsIgnoreCase(password)){
-            return true;
-        }else{
-            return false;
-        }
+        return indexService.register(username,password);
     }
 
     @RequestMapping(value = "/login",method = RequestMethod.GET)
@@ -34,14 +36,7 @@ public class IndexController {
             SessionMeta sessionMeta
     ){
         logger.info("[登陆用户]用户名:{},密码:{}",username,password);
-        if("quickserver".equalsIgnoreCase(username)&&
-                "123456".equalsIgnoreCase(password)){
-            sessionMeta.attributes.put("username",username);
-            logger.info("[会话添加属性]会话id:{},属性:{}", sessionMeta.id,sessionMeta.attributes);
-            return true;
-        }else{
-            return false;
-        }
+        return indexService.login(username,password,sessionMeta);
     }
 
     @RequestMapping(value = "/showUserInfo",method = RequestMethod.GET)
