@@ -87,6 +87,9 @@ public class RequestHandler {
                         case "authorization":{
                             requestMeta.authorization = value;
                         }break;
+                        case "accept-encoding":{
+                            requestMeta.acceptEncoding = value;
+                        }break;
                     }
                 }
             }
@@ -105,14 +108,11 @@ public class RequestHandler {
                 handleMultipartFormData(requestMeta);
             }else{
                 if(requestMeta.contentType.contains("application/x-www-form-urlencoded")
+                        ||requestMeta.contentType.contains("application/json")
                         ||requestMeta.contentType.startsWith("text/")){
-                    int b;
-                    StringBuffer bodyBuffer = new StringBuffer();
-                    for(int i=0;i<requestMeta.contentLength;i++){
-                        b = requestMeta.inputStream.read();
-                        bodyBuffer.append((char)b);
-                    }
-                    requestMeta.body = new String(bodyBuffer.toString().getBytes(),requestMeta.charset);
+                    byte[] bytes = new byte[(int) requestMeta.contentLength];
+                    requestMeta.inputStream.read(bytes,0,bytes.length);
+                    requestMeta.body = new String(bytes,requestMeta.charset);
                 }
                 //处理post表单参数
                 if(requestMeta.contentType.contains("application/x-www-form-urlencoded")){

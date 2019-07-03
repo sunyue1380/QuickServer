@@ -40,6 +40,8 @@ public class RequestMeta {
     public String connection;
     /**认证头*/
     public String authorization;
+    /**允许的压缩格式*/
+    public String acceptEncoding;
     /**原始输入流*/
     public InputStream inputStream;
 

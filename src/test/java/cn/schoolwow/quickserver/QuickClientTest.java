@@ -87,7 +87,7 @@ public class QuickClientTest {
     public void testRequestBody() throws IOException {
         Response response = QuickHttp.connect(host+"/requestBody")
                 .method(Connection.Method.POST)
-                .requestBody("quickserver requestBody")
+                .requestBody("这是RequestBody中文字符串")
                 .execute();
         Assert.assertEquals("true",response.body());
     }

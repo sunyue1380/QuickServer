@@ -67,9 +67,11 @@ public class ResponseHandler {
         if(QuickServerConfig.compressSupports==null||!responseMeta.contentType.startsWith("text/")||requestMeta.headers.containsKey("accept-encoding")){
             return null;
         }
-        String acceptEncoding = requestMeta.headers.get("accept-encoding");
+        if(requestMeta.acceptEncoding==null||requestMeta.acceptEncoding.isEmpty()){
+            return null;
+        }
         for(String supportCompress: QuickServerConfig.compressSupports){
-            if(acceptEncoding.contains(supportCompress)){
+            if(requestMeta.acceptEncoding.contains(supportCompress)){
                 responseMeta.headers.put("Content-Encoding",supportCompress);
                 break;
             }

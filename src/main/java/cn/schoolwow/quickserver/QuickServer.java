@@ -126,7 +126,7 @@ public class QuickServer {
     }
 
     /**处理响应*/
-    public void handleResponse(RequestMeta requestMeta,ResponseMeta responseMeta,SessionMeta sessionMeta) throws Exception {
+    private void handleResponse(RequestMeta requestMeta,ResponseMeta responseMeta,SessionMeta sessionMeta) throws Exception {
         //处理重定向
         if(null!=responseMeta.forward){
             requestMeta.requestURI = responseMeta.forward;
@@ -152,7 +152,7 @@ public class QuickServer {
     }
 
     /**处理请求*/
-    public void handleRequest(RequestMeta requestMeta,ResponseMeta responseMeta,SessionMeta sessionMeta) throws Exception {
+    private void handleRequest(RequestMeta requestMeta,ResponseMeta responseMeta,SessionMeta sessionMeta) throws Exception {
         //初始化过滤器
         {
             for(Filter filter:ControllerUtil.filterList){
