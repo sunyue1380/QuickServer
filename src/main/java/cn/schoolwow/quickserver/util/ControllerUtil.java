@@ -11,9 +11,14 @@ import cn.schoolwow.quickserver.interceptor.HandlerInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 public class ControllerUtil {
     private static Logger logger = LoggerFactory.getLogger(ControllerUtil.class);
@@ -27,6 +32,8 @@ public class ControllerUtil {
     private static QuickBeans quickBeans = new QuickBeans();
     /**扫描类数组*/
     private static List<Class> classList = new ArrayList<>();
+
+    private static SimpleDateFormat sdf = new SimpleDateFormat();
 
     /**获取拦截器实例*/
     public static HandlerInterceptor getInterceptor(Class _class){
@@ -91,7 +98,50 @@ public class ControllerUtil {
             request.instance = quickBeans.getBean(c.getName());
             request.mappingUrl = mappingUrl;
             request.method = method;
+            request.antPatternUrl = mappingUrl.replaceAll("\\{\\w+\\}","\\*");
+            request.requestPattern = Pattern.compile("\\{(\\w+)\\}");
+            request.regexUrlPattern = Pattern.compile(mappingUrl.replaceAll("\\{(\\w+)\\}","\\(\\\\w\\+\\)"));
             requestMappingHandler.put(mappingUrl,request);
+        }
+    }
+    
+    /**转换参数类型*/
+    public static Object castParameter(Parameter parameter,String requestParameter,String datePattern) throws ParseException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        if(parameter.getType().isPrimitive()){
+            switch(parameter.getType().getName()){
+                case "boolean":{
+                    return Boolean.parseBoolean(requestParameter);
+                }
+                case "byte":{
+                    return Byte.parseByte(requestParameter);
+                }
+                case "char":{
+                    return requestParameter.charAt(0);
+                }
+                case "short":{
+                    return Short.parseShort(requestParameter);
+                }
+                case "int":{
+                    return Integer.parseInt(requestParameter);
+                }
+                case "long":{
+                    return Long.parseLong(requestParameter);
+                }
+                case "float":{
+                    return Float.parseFloat(requestParameter);
+                }
+                case "double":{
+                    return Double.parseDouble(requestParameter);
+                }
+                default:{
+                    return null;
+                }
+            }
+        }else if("java.util.Date".equals(parameter.getType().getName())){
+            sdf.applyPattern(datePattern);
+            return sdf.parse(requestParameter);
+        }else{
+            return parameter.getType().getConstructor(String.class).newInstance(requestParameter);
         }
     }
 }

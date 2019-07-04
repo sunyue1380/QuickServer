@@ -15,6 +15,7 @@ import java.io.File;
 import java.util.Date;
 
 @Component
+@ResponseBody
 public class IndexController {
     private Logger logger = LoggerFactory.getLogger(IndexController.class);
     @Resource
@@ -73,14 +74,6 @@ public class IndexController {
         responseMeta.redirect("/redirect.html");
     }
 
-    @RequestMapping(value = "/forward",method = RequestMethod.GET)
-    public void forward(
-            ResponseMeta responseMeta
-    ){
-        logger.info("[转发]目标:{},","/redirect.html");
-        responseMeta.forward("/redirect.html");
-    }
-
     @RequestMapping(value = "/crossOrigin",method = {RequestMethod.GET,RequestMethod.POST})
     @CrossOrigin
     public String crossOrigin(
@@ -116,5 +109,13 @@ public class IndexController {
     ){
         logger.info("[参数类型转换]age:{},size:{},phone:{},time:{}",age,size,phone,date);
         return "true";
+    }
+
+    @RequestMapping(value = "/pathVariable/{userId}",method = {RequestMethod.GET})
+    public boolean pathVariable(
+            @PathVariable(name = "userId") int userId
+    ){
+        logger.info("[路径变量]userId:{}",userId);
+        return true;
     }
 }

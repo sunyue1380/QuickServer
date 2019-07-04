@@ -13,9 +13,12 @@ import cn.schoolwow.quickserver.session.SessionMeta;
 import cn.schoolwow.quickserver.util.AntPatternUtil;
 import cn.schoolwow.quickserver.util.ControllerUtil;
 import cn.schoolwow.quickserver.util.QuickServerConfig;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.activation.MimetypesFileTypeMap;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -30,10 +33,10 @@ import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
 
 public class QuickServer {
     Logger logger = LoggerFactory.getLogger(QuickServer.class);
-    private static SimpleDateFormat sdf = new SimpleDateFormat();
     private int port = 9000;
     private ThreadPoolExecutor threadPoolExecutor;
     private String webapps;
@@ -163,9 +166,19 @@ public class QuickServer {
         }
         //初始化Method
         {
-            Request request = ControllerUtil.requestMappingHandler.get(requestMeta.requestURI);
-            if(request!=null){
+            Collection<Request> requestCollection = ControllerUtil.requestMappingHandler.values();
+            for(Request request:requestCollection){
+                if(!AntPatternUtil.doMatch(requestMeta.requestURI,request.antPatternUrl)){
+                    continue;
+                }
+                Matcher requestMatcher = request.requestPattern.matcher(request.mappingUrl);
+                Matcher regexUrlMatcher = request.regexUrlPattern.matcher(requestMeta.requestURI);
+                while(requestMatcher.find()&& regexUrlMatcher.find()){
+                    requestMeta.pathVariable.put(requestMatcher.group(1),regexUrlMatcher.group(1));
+                }
                 requestMeta.invokeMethod = request.method;
+                requestMeta.request = request;
+                break;
             }
         }
         //TODO 按照匹配模式长度进行顺序执行
@@ -271,7 +284,7 @@ public class QuickServer {
 
     /**处理方法调用*/
     private Object handleInvokeMethod(RequestMeta requestMeta,ResponseMeta responseMeta,SessionMeta sessionMeta) throws Exception {
-        Object controller = ControllerUtil.requestMappingHandler.get(requestMeta.requestURI).instance;
+        Object controller = requestMeta.request.instance;
         Parameter[] parameters = requestMeta.invokeMethod.getParameters();
         if(parameters.length==0){
             return requestMeta.invokeMethod.invoke(controller);
@@ -303,40 +316,7 @@ public class QuickServer {
                             if(requestParameter==null){
                                 requestParameter = requestParam.defaultValue();
                             }
-
-                            if(parameter.getType().isPrimitive()){
-                                switch(parameterType){
-                                    case "boolean":{
-                                        parameterList.add(Boolean.parseBoolean(requestParameter));
-                                    };break;
-                                    case "byte":{
-                                        parameterList.add(Byte.parseByte(requestParameter));
-                                    };break;
-                                    case "char":{
-                                        parameterList.add(requestParameter.charAt(0));
-                                    };break;
-                                    case "short":{
-                                        parameterList.add(Short.parseShort(requestParameter));
-                                    };break;
-                                    case "int":{
-                                        parameterList.add(Integer.parseInt(requestParameter));
-                                    };break;
-                                    case "long":{
-                                        parameterList.add(Long.parseLong(requestParameter));
-                                    };break;
-                                    case "float":{
-                                        parameterList.add(Float.parseFloat(requestParameter));
-                                    };break;
-                                    case "double":{
-                                        parameterList.add(Double.parseDouble(requestParameter));
-                                    };break;
-                                }
-                            }else if("java.util.Date".equals(parameterType)){
-                                sdf.applyPattern(requestParam.pattern());
-                                parameterList.add(sdf.parse(requestParameter));
-                            }else{
-                                parameterList.add(parameter.getType().getConstructor(String.class).newInstance(requestParameter));
-                            }
+                            parameterList.add(ControllerUtil.castParameter(parameter,requestParameter,requestParam.pattern()));
                         }
                     }
                     //处理RequestPart
@@ -384,10 +364,42 @@ public class QuickServer {
                             parameterList.add(requestMeta.headers.get(requestHeader.name().toLowerCase()));
                         }
                     }
+                    //处理PathVariable
+                    {
+                        PathVariable pathVariable = parameter.getAnnotation(PathVariable.class);
+                        if(null!=pathVariable){
+                            if(pathVariable.required()&&!requestMeta.pathVariable.containsKey(pathVariable.name())){
+                                responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST);
+                                responseMeta.body = "路径变量["+pathVariable.name()+"]不能为空!";
+                                return null;
+                            }
+                            parameterList.add(ControllerUtil.castParameter(parameter,requestMeta.pathVariable.get(pathVariable.name()),null));
+                        }
+                    }
                 }
             }
         }
-        return requestMeta.invokeMethod.invoke(controller,parameterList.toArray(new Object[]{parameterList.size()}));
+        Object result = requestMeta.invokeMethod.invoke(controller,parameterList.toArray(new Object[]{parameterList.size()}));
+        if(result==null){
+            return null;
+        }
+        //处理ResponseBody注解
+        ResponseBody responseBody = controller.getClass().getDeclaredAnnotation(ResponseBody.class);
+        if(responseBody==null){
+            responseBody = requestMeta.invokeMethod.getAnnotation(ResponseBody.class);
+        }
+        if(responseBody==null){
+            responseMeta.forward(result.toString());
+        }else{
+            switch(responseBody.value()){
+                case String:{
+                }break;
+                case JSON:{
+                    result = JSON.toJSONString(result);
+                }
+            }
+        }
+        return result;
     }
 
     /**处理跨域请求*/
@@ -492,6 +504,10 @@ public class QuickServer {
             responseMeta.response(ResponseMeta.HttpStatus.OK);
             responseMeta.file = staticFile;
             responseMeta.contentType = Files.probeContentType(Paths.get(staticFile.getAbsolutePath()));
+            if(responseMeta.contentType==null){
+                responseMeta.contentType = new MimetypesFileTypeMap().getContentType(staticFile);
+            }
+            responseMeta.contentType += " ;charset=utf-8";
             responseMeta.contentLength = responseMeta.file.length();
             responseMeta.headers.put("Content-Type",responseMeta.contentType);
             responseMeta.headers.put("Content-Length",responseMeta.contentLength+"");

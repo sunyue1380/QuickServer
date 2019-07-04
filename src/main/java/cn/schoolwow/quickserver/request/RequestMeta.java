@@ -1,5 +1,7 @@
 package cn.schoolwow.quickserver.request;
 
+import cn.schoolwow.quickserver.domain.Request;
+
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -17,6 +19,8 @@ public class RequestMeta {
     public String protocol;
     /**编码格式*/
     public String charset = "utf-8";
+    /**路径映射参数*/
+    public Map<String,String> pathVariable = new HashMap<>();
     //TODO 参数值和头部的键都是有可能重复的
     /**参数列表*/
     public Map<String,String> parameters = new HashMap<>();
@@ -47,4 +51,6 @@ public class RequestMeta {
 
     /**调用方法*/
     public Method invokeMethod;
+    /**对应Request方法*/
+    public Request request;
 }

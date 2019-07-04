@@ -67,7 +67,7 @@ public class AntPatternUtil {
                         if(isNextMatch(urlPos,urlChars,nextword)){
                             urlPos+=nextword.length();
                         }else{
-                            break;
+                            return false;
                         }
                     }break;
                 }

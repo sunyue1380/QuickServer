@@ -26,6 +26,7 @@ public class QuickClientTest {
                 .data("username","quickserver")
                 .data("password","123456")
                 .execute();
+        System.out.println(response.body());
         Assert.assertEquals("true",response.body());
     }
 
@@ -100,6 +101,14 @@ public class QuickClientTest {
                 .data("size","10000")
                 .data("phone","123456789")
                 .data("time","2019-06-25")
+                .execute();
+        Assert.assertEquals("true",response.body());
+    }
+
+    @Test
+    public void testPathVariable() throws IOException {
+        Response response = QuickHttp.connect(host+"/pathVariable/1")
+                .method(Connection.Method.GET)
                 .execute();
         Assert.assertEquals("true",response.body());
     }
