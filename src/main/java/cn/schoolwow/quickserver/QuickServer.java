@@ -166,20 +166,7 @@ public class QuickServer {
         }
         //初始化Method
         {
-            Collection<Request> requestCollection = ControllerUtil.requestMappingHandler.values();
-            for(Request request:requestCollection){
-                if(!AntPatternUtil.doMatch(requestMeta.requestURI,request.antPatternUrl)){
-                    continue;
-                }
-                Matcher requestMatcher = request.requestPattern.matcher(request.mappingUrl);
-                Matcher regexUrlMatcher = request.regexUrlPattern.matcher(requestMeta.requestURI);
-                while(requestMatcher.find()&& regexUrlMatcher.find()){
-                    requestMeta.pathVariable.put(requestMatcher.group(1),regexUrlMatcher.group(1));
-                }
-                requestMeta.invokeMethod = request.method;
-                requestMeta.request = request;
-                break;
-            }
+            getInvokeMethod(requestMeta);
         }
         //TODO 按照匹配模式长度进行顺序执行
         for(Filter filter:ControllerUtil.filterList){
@@ -205,8 +192,7 @@ public class QuickServer {
         }
         //判断是否支持该方法
         {
-            RequestMapping methodRequestMapping = requestMeta.invokeMethod.getAnnotation(RequestMapping.class);
-            RequestMethod[] requestMethods = methodRequestMapping.method();
+            RequestMethod[] requestMethods = requestMeta.request.requestMethods;
             boolean support = false;
             if(requestMethods.length==0||(requestMeta.origin!=null&&RequestMethod.OPTIONS.name().equalsIgnoreCase(requestMeta.method))){
                 support = true;
@@ -279,6 +265,69 @@ public class QuickServer {
             if(AntPatternUtil.matchFilter(requestMeta.requestURI,filter)){
                 filter.handlerInterceptor.postHandle(requestMeta,responseMeta,sessionMeta,requestMeta.invokeMethod,result);
             }
+        }
+    }
+
+    /**获取InvokeMethod*/
+    private void getInvokeMethod(RequestMeta requestMeta){
+        Collection<Request> requestCollection = ControllerUtil.requestMappingHandler.values();
+        for(Request request:requestCollection){
+            int urlPos=0,mappingPos=0,lastUrlPos=0,lastMappingPos=0;
+            String requestURI = requestMeta.requestURI;
+            String mappingUrl = request.mappingUrl;
+            String antRequestUrl = mappingUrl;
+            while(urlPos<requestURI.length()&&mappingPos<mappingUrl.length()){
+                if(mappingUrl.charAt(mappingPos)=='{'){
+                    lastUrlPos=urlPos;
+                    lastMappingPos=mappingPos+1;
+
+                    while(mappingPos<mappingUrl.length()&&mappingUrl.charAt(mappingPos)!='}'){
+                        mappingPos++;
+                    }
+                    if(mappingPos<mappingUrl.length()){
+                        //提取变量名
+                        String name = mappingUrl.substring(lastMappingPos,mappingPos);
+                        antRequestUrl = antRequestUrl.replace("{"+name+"}","*");
+                        String value = null;
+                        //提取变量值
+                        if(mappingPos+1<mappingUrl.length()){
+                            while(urlPos<requestURI.length()&&requestURI.charAt(urlPos)!=mappingUrl.charAt(mappingPos+1)){
+                                urlPos++;
+                            }
+                            if(urlPos<requestURI.length()){
+                                value = requestURI.substring(lastUrlPos,urlPos);
+                            }
+                        }else{
+                            value = requestURI.substring(lastUrlPos);
+                        }
+                        requestMeta.pathVariable.put(name,value);
+                    }
+                }else if(requestURI.charAt(urlPos)==mappingUrl.charAt(mappingPos)){
+                    urlPos++;
+                    mappingPos++;
+                }else{
+                    mappingPos++;
+                }
+            }
+            if(!AntPatternUtil.doMatch(requestURI,antRequestUrl)){
+                continue;
+            }
+            if(request.requestMethods.length==0){
+                requestMeta.invokeMethod = request.method;
+            }else{
+                //判断请求方法是否匹配
+                for(RequestMethod requestMethod:request.requestMethods){
+                    if(requestMethod.name().equals(requestMeta.method)){
+                        requestMeta.invokeMethod = request.method;
+                        break;
+                    }
+                }
+            }
+            if(requestMeta.invokeMethod==null){
+                continue;
+            }
+            requestMeta.request = request;
+            break;
         }
     }
 

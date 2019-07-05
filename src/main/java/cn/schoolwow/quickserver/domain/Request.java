@@ -1,5 +1,7 @@
 package cn.schoolwow.quickserver.domain;
 
+import cn.schoolwow.quickserver.annotation.RequestMethod;
+
 import java.lang.reflect.Method;
 import java.util.regex.Pattern;
 
@@ -7,6 +9,8 @@ import java.util.regex.Pattern;
 public class Request {
     /**映射路径*/
     public String mappingUrl;
+    /**匹配方法*/
+    public RequestMethod[] requestMethods;
     /**Ant模式路径*/
     public String antPatternUrl;
     /**原始模式*/

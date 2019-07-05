@@ -28,9 +28,53 @@ public class QuickServerTest {
     }
 
     @Test
+    public void test11(){
+        String requestURI = "/restful/script/2";
+        String requestMappingHander = "/restful/{entity}/{id}";
+        String antRequestUrl = requestMappingHander;
+
+        int urlPos=0,mappingPos=0,lastUrlPos=0,lastMappingPos=0;
+        while(urlPos<requestURI.length()&&mappingPos<requestMappingHander.length()){
+            if(requestMappingHander.charAt(mappingPos)=='{'){
+                lastUrlPos=urlPos;
+                lastMappingPos=mappingPos+1;
+
+                while(mappingPos<requestMappingHander.length()&&requestMappingHander.charAt(mappingPos)!='}'){
+                    mappingPos++;
+                }
+                if(mappingPos<requestMappingHander.length()){
+                    //提取变量名
+                    String name = requestMappingHander.substring(lastMappingPos,mappingPos);
+                    System.out.println("提取变量名:"+name);
+                    antRequestUrl = antRequestUrl.replace("{"+name+"}","*");
+                    //提取变量值
+                    if(mappingPos+1<requestMappingHander.length()){
+                        while(urlPos<requestURI.length()&&requestURI.charAt(urlPos)!=requestMappingHander.charAt(mappingPos+1)){
+                            urlPos++;
+                        }
+                        if(urlPos<requestURI.length()){
+                            System.out.println("变量值:"+requestURI.substring(lastUrlPos,urlPos));
+                        }
+                    }else{
+                        //末尾
+                        System.out.println("变量值:"+requestURI.substring(lastUrlPos));
+                    }
+                }
+            }else if(requestURI.charAt(urlPos)==requestMappingHander.charAt(mappingPos)){
+                urlPos++;
+                mappingPos++;
+            }else{
+                mappingPos++;
+            }
+        }
+        System.out.println(antRequestUrl);
+    }
+
+    @Test
     public void testPathVariable(){
-        String requestURI = "/pathVariable/1";
-        String requestMappingHander = "/requestBody";
+        String requestURI = "/restful/script/2";
+        String requestMappingHander = "/restful/{entity}/{id}";
+        //  /restful/(\\w+)/(\\w+)
 
         String antPatternUrl = requestMappingHander.replaceAll("\\{\\w+\\}","\\*");
         if(!AntPatternUtil.doMatch(requestURI,antPatternUrl)){
@@ -39,10 +83,18 @@ public class QuickServerTest {
         }
         System.out.println("匹配");
         Matcher requestMatcher = Pattern.compile("\\{(\\w+)\\}").matcher(requestMappingHander);
-        Matcher regexUrlMatcher = Pattern.compile(requestMappingHander.replaceAll("\\{(\\w+)\\}","\\(\\\\w\\+\\)")).matcher(requestURI);
-        while(requestMatcher.find()&&regexUrlMatcher.find()){
-            logger.info("{}==>{}",requestMatcher.group(1),regexUrlMatcher.group(1));
+        while(requestMatcher.find()){
+            System.out.println(requestMatcher.group(1));
         }
+        String p = requestMappingHander.replaceAll("\\{(\\w+)\\}","\\(\\\\w\\+\\)");
+        System.out.println(p);
+        Matcher regexUrlMatcher = Pattern.compile(p).matcher(requestURI);
+        while(regexUrlMatcher.find()){
+            System.out.println(regexUrlMatcher.group(1));
+        }
+//        while(requestMatcher.find()&&regexUrlMatcher.find()){
+//            logger.info("{}==>{}",requestMatcher.group(1),regexUrlMatcher.group(1));
+//        }
     }
 
     @Test

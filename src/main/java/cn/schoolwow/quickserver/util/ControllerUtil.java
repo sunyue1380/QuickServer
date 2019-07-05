@@ -97,6 +97,7 @@ public class ControllerUtil {
             Request request = new Request();
             request.instance = quickBeans.getBean(c.getName());
             request.mappingUrl = mappingUrl;
+            request.requestMethods = methodRequestMapping.method();
             request.method = method;
             request.antPatternUrl = mappingUrl.replaceAll("\\{\\w+\\}","\\*");
             request.requestPattern = Pattern.compile("\\{(\\w+)\\}");
