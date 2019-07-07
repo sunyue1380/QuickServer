@@ -1,19 +1,15 @@
 package cn.schoolwow.quickserver;
 
-import cn.schoolwow.quickserver.domain.Request;
 import cn.schoolwow.quickserver.util.AntPatternUtil;
-import cn.schoolwow.quickserver.util.ControllerUtil;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class QuickServerTest {
     private static Logger logger = LoggerFactory.getLogger(QuickServerTest.class);
@@ -23,12 +19,11 @@ public class QuickServerTest {
         QuickServer.newInstance()
                 .scan("cn.schoolwow.quickserver.controller")
                 .scan("cn.schoolwow.quickserver.service")
-                .webapps("C:/Users/admin/IdeaProjects/QuickServer/src/test/java/webapps")
                 .start();
     }
 
     @Test
-    public void test11(){
+    public void testPathVariable(){
         String requestURI = "/restful/script/2";
         String requestMappingHander = "/restful/{entity}/{id}";
         String antRequestUrl = requestMappingHander;
@@ -68,33 +63,6 @@ public class QuickServerTest {
             }
         }
         System.out.println(antRequestUrl);
-    }
-
-    @Test
-    public void testPathVariable(){
-        String requestURI = "/restful/script/2";
-        String requestMappingHander = "/restful/{entity}/{id}";
-        //  /restful/(\\w+)/(\\w+)
-
-        String antPatternUrl = requestMappingHander.replaceAll("\\{\\w+\\}","\\*");
-        if(!AntPatternUtil.doMatch(requestURI,antPatternUrl)){
-            System.out.println("不匹配");
-            return;
-        }
-        System.out.println("匹配");
-        Matcher requestMatcher = Pattern.compile("\\{(\\w+)\\}").matcher(requestMappingHander);
-        while(requestMatcher.find()){
-            System.out.println(requestMatcher.group(1));
-        }
-        String p = requestMappingHander.replaceAll("\\{(\\w+)\\}","\\(\\\\w\\+\\)");
-        System.out.println(p);
-        Matcher regexUrlMatcher = Pattern.compile(p).matcher(requestURI);
-        while(regexUrlMatcher.find()){
-            System.out.println(regexUrlMatcher.group(1));
-        }
-//        while(requestMatcher.find()&&regexUrlMatcher.find()){
-//            logger.info("{}==>{}",requestMatcher.group(1),regexUrlMatcher.group(1));
-//        }
     }
 
     @Test

@@ -1,8 +1,9 @@
 package cn.schoolwow.quickserver.response;
 
-import java.io.File;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -99,7 +100,9 @@ public class ResponseMeta {
     /**body*/
     public String body;
     /**静态资源*/
-    public File file;
+    public URL staticURL;
+    /**静态资源*/
+    public InputStream inputStream;
     /**转发*/
     public String forward;
     /**默认编码*/

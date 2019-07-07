@@ -12,34 +12,29 @@ import cn.schoolwow.quickserver.session.SessionHandler;
 import cn.schoolwow.quickserver.session.SessionMeta;
 import cn.schoolwow.quickserver.util.AntPatternUtil;
 import cn.schoolwow.quickserver.util.ControllerUtil;
+import cn.schoolwow.quickserver.util.MIMEUtil;
 import cn.schoolwow.quickserver.util.QuickServerConfig;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.activation.MimetypesFileTypeMap;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Parameter;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 public class QuickServer {
     Logger logger = LoggerFactory.getLogger(QuickServer.class);
     private int port = 9000;
     private ThreadPoolExecutor threadPoolExecutor;
-    private String webapps;
 
     public static QuickServer newInstance(){
         return new QuickServer();
@@ -65,11 +60,6 @@ public class QuickServer {
         return this;
     }
 
-    public QuickServer webapps(String webapps){
-        this.webapps = webapps;
-        return this;
-    }
-
     /**配置压缩策略*/
     public QuickServer compress(boolean compress){
         if(compress){
@@ -84,10 +74,6 @@ public class QuickServer {
         if(threadPoolExecutor==null){
             threadPoolExecutor = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(),200,1, TimeUnit.MINUTES,new LinkedBlockingQueue<>());
         }
-        if(webapps==null){
-            webapps = new File(".").getAbsolutePath();
-        }
-        logger.debug("[webapp]目录地址:{}",webapps);
         //注入依赖
         ControllerUtil.refresh();
 
@@ -142,10 +128,10 @@ public class QuickServer {
         responseMeta.headers.put("Connection","Close");
         responseMeta.headers.put("Server","QuickServer");
         responseMeta.headers.put("Date",new Date().toString());
-        if(responseMeta.file==null){
+        if(responseMeta.staticURL==null){
             logger.debug("[响应元数据]响应行:{},头部:{},主体:{}", responseMeta.status+" "+responseMeta.statusMessage,responseMeta.headers,responseMeta.body);
         }else{
-            logger.debug("[响应元数据]响应行:{},头部:{},资源:{}", responseMeta.status+" "+responseMeta.statusMessage,responseMeta.headers,responseMeta.file.getAbsolutePath());
+            logger.debug("[响应元数据]响应行:{},头部:{},资源:{}", responseMeta.status+" "+responseMeta.statusMessage,responseMeta.headers,responseMeta.staticURL);
         }
         for(Filter filter: ControllerUtil.filterList){
             if(AntPatternUtil.matchFilter(requestMeta.requestURI,filter)){
@@ -179,7 +165,7 @@ public class QuickServer {
         //处理静态资源
         {
             handleStaticFile(requestMeta,responseMeta);
-            if(responseMeta.file!=null){
+            if(responseMeta.staticURL!=null){
                 return;
             }
         }
@@ -309,7 +295,8 @@ public class QuickServer {
                     mappingPos++;
                 }
             }
-            if(!AntPatternUtil.doMatch(requestURI,antRequestUrl)){
+            if(mappingUrl.contains("{")&&!AntPatternUtil.doMatch(requestURI,antRequestUrl)
+                    ||!requestURI.equals(mappingUrl)){
                 continue;
             }
             if(request.requestMethods.length==0){
@@ -545,22 +532,34 @@ public class QuickServer {
     }
 
     /**处理静态资源请求*/
-    private void handleStaticFile(RequestMeta requestMeta,ResponseMeta responseMeta) throws IOException {
-        //查找静态路径
-        File staticFile = new File(webapps+requestMeta.requestURI);
-        if(staticFile.exists()&&staticFile.isFile()){
-            logger.debug("[访问静态资源]请求路径:{},资源路径:{}",requestMeta.requestURI,staticFile.getAbsolutePath());
-            responseMeta.response(ResponseMeta.HttpStatus.OK);
-            responseMeta.file = staticFile;
-            responseMeta.contentType = Files.probeContentType(Paths.get(staticFile.getAbsolutePath()));
-            if(responseMeta.contentType==null){
-                responseMeta.contentType = new MimetypesFileTypeMap().getContentType(staticFile);
-            }
-            responseMeta.contentType += " ;charset=utf-8";
-            responseMeta.contentLength = responseMeta.file.length();
-            responseMeta.headers.put("Content-Type",responseMeta.contentType);
-            responseMeta.headers.put("Content-Length",responseMeta.contentLength+"");
+    private void handleStaticFile(RequestMeta requestMeta,ResponseMeta responseMeta) throws IOException, URISyntaxException {
+        URL url = this.getClass().getResource(requestMeta.requestURI);
+        if(url==null){
             return;
         }
+        switch(url.getProtocol()){
+            case "file":{
+                File file = new File(url.getFile());
+                if(file.isDirectory()){
+                    return;
+                }
+                responseMeta.inputStream = url.openStream();
+            }break;
+            case "jar":{
+                JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
+                JarFile jarFile = jarURLConnection.getJarFile();
+                JarEntry jarEntry = jarFile.getJarEntry(requestMeta.requestURI.substring(1));
+                if(jarEntry==null||jarEntry.isDirectory()){
+                    return;
+                }
+                responseMeta.inputStream = jarFile.getInputStream(jarEntry);
+            }break;
+        }
+        logger.debug("[访问静态资源]请求路径:{},资源路径:{}",requestMeta.requestURI,url.toString());
+        responseMeta.response(ResponseMeta.HttpStatus.OK);
+        responseMeta.staticURL = url;
+        responseMeta.contentType = MIMEUtil.getMIMEType(requestMeta.requestURI);
+        responseMeta.contentLength = responseMeta.inputStream.available();
+        responseMeta.contentType += " ;charset=utf-8";
     }
 }

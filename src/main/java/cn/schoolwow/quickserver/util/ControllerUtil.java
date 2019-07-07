@@ -16,7 +16,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
@@ -43,7 +46,7 @@ public class ControllerUtil {
     /**注入依赖与扫描注解*/
     public static void refresh() {
         quickBeans.refresh();
-        Set<String> beanNameSet = quickBeans.getBeanNameSet();
+        List<String> beanNameSet = quickBeans.getBeanNameList();
         for(String beanName:beanNameSet){
             doScan(quickBeans.getBean(beanName).getClass());
         }

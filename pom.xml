@@ -149,4 +149,17 @@
             </activation>
         </profile>
     </profiles>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>${baseDir}</directory>
+                <excludes>
+                    <exclude>**/*.html</exclude>
+                    <exclude>**/*.png</exclude>
+                </excludes>
+            </resource>
+        </resources>
+    </build>
+
 </project>

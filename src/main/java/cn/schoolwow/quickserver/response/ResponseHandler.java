@@ -6,8 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
 import java.util.List;
@@ -94,11 +94,11 @@ public class ResponseHandler {
         if(responseMeta.body!=null){
             outputStream.write(responseMeta.body.getBytes());
         }
-        if(responseMeta.file!=null){
-            FileInputStream fis = new FileInputStream(responseMeta.file);
+        if(responseMeta.staticURL!=null){
+            InputStream inputStream = responseMeta.inputStream;
             int length = -1;
             byte[] bytes = new byte[8192];
-            while((length=fis.read(bytes,0,bytes.length))!=-1){
+            while((length=inputStream.read(bytes,0,bytes.length))!=-1){
                 outputStream.write(bytes,0,length);
             }
         }
