@@ -4,11 +4,15 @@ import cn.schoolwow.quickserver.domain.Request;
 
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
 /**http请求元信息*/
 public class RequestMeta {
+    /**对方信息*/
+    public InetAddress remoteAddress;
     /**请求方法*/
     public String method;
     /**请求路径*/

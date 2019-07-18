@@ -83,6 +83,7 @@ public class QuickServer {
             final Socket socket = serverSocket.accept();
             threadPoolExecutor.execute(()->{
                 final RequestMeta requestMeta = new RequestMeta();
+                requestMeta.remoteAddress = socket.getInetAddress();
                 final ResponseMeta responseMeta = new ResponseMeta();
                 try {
                     //处理输入流
@@ -99,7 +100,7 @@ public class QuickServer {
                     requestMeta.inputStream.close();
                     responseMeta.outputStream.close();
                     socket.close();
-                    logger.info("[请求完毕]======================================================");
+                    logger.debug("[请求完毕]======================================================");
                 } catch (Exception e) {
                     e.printStackTrace();
                     try {
@@ -116,15 +117,23 @@ public class QuickServer {
 
     /**处理响应*/
     private void handleResponse(RequestMeta requestMeta,ResponseMeta responseMeta,SessionMeta sessionMeta) throws Exception {
+        //处理过滤器
+        //TODO 按照匹配模式长度进行顺序执行
+        for(Filter filter: ControllerUtil.filterList){
+            if(AntPatternUtil.matchFilter(requestMeta.requestURI,filter)){
+                filter.handlerInterceptor.postHandle(requestMeta,responseMeta,sessionMeta,requestMeta.invokeMethod,responseMeta.body);
+            }
+        }
         //处理重定向
         if(null!=responseMeta.forward){
             requestMeta.requestURI = responseMeta.forward;
             handleRequest(requestMeta,responseMeta,sessionMeta);
         }
         if(responseMeta.body!=null){
-            responseMeta.headers.put("Content-Type",responseMeta.contentType+"; charset="+responseMeta.charset);
-            responseMeta.headers.put("Content-Length",responseMeta.body.getBytes().length+"");
+            responseMeta.contentLength = responseMeta.body.getBytes().length;
         }
+        responseMeta.headers.put("Content-Type",responseMeta.contentType+"; charset="+responseMeta.charset);
+        responseMeta.headers.put("Content-Length",responseMeta.contentLength+"");
         responseMeta.headers.put("Connection","Close");
         responseMeta.headers.put("Server","QuickServer");
         responseMeta.headers.put("Date",new Date().toString());
@@ -243,13 +252,6 @@ public class QuickServer {
                 }else{
                     responseMeta.body += result.toString();
                 }
-            }
-        }
-        //处理过滤器
-        //TODO 按照匹配模式长度进行顺序执行
-        for(Filter filter: ControllerUtil.filterList){
-            if(AntPatternUtil.matchFilter(requestMeta.requestURI,filter)){
-                filter.handlerInterceptor.postHandle(requestMeta,responseMeta,sessionMeta,requestMeta.invokeMethod,result);
             }
         }
     }
@@ -432,6 +434,7 @@ public class QuickServer {
                 }break;
                 case JSON:{
                     result = JSON.toJSONString(result);
+                    responseMeta.contentType = "application/json";
                 }
             }
         }
@@ -560,6 +563,5 @@ public class QuickServer {
         responseMeta.staticURL = url;
         responseMeta.contentType = MIMEUtil.getMIMEType(requestMeta.requestURI);
         responseMeta.contentLength = responseMeta.inputStream.available();
-        responseMeta.contentType += " ;charset=utf-8";
     }
 }

@@ -132,7 +132,7 @@ public class RequestHandler {
         }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         while(true){
-            String line = IOUtil.readLine(requestMeta.inputStream);
+            String line = IOUtil.readLine(requestMeta);
             int length = Integer.parseInt(line,16);
             if(length==0){
                 break;
@@ -156,12 +156,12 @@ public class RequestHandler {
         byte[] splitBoundary = ("--"+requestMeta.boundary).getBytes();
         int b;
         //读取第一行
-        IOUtil.readLine(requestMeta.inputStream);
+        IOUtil.readLine(requestMeta);
         while(true){
             MultipartFile multipartFile= new MultipartFile();
             //Content-Disposition
             {
-                String contentDisposition = IOUtil.readLine(requestMeta.inputStream);
+                String contentDisposition = IOUtil.readLine(requestMeta);
                 multipartFile.name = RegExpUtil.extract(contentDisposition,"name=\"(?<name>\\w+)\"","name");;
                 if(contentDisposition.contains("filename=")){
                     multipartFile.originalFilename = RegExpUtil.extract(contentDisposition,"filename=\"(?<filename>.*)\"$","filename");
@@ -170,10 +170,10 @@ public class RequestHandler {
             //额外行
             {
                 StringBuffer extraHeaderBuffer = new StringBuffer();
-                String line = IOUtil.readLine(requestMeta.inputStream);
+                String line = IOUtil.readLine(requestMeta);
                 while(!line.equals("")){
                     extraHeaderBuffer.append(line);
-                    line = IOUtil.readLine(requestMeta.inputStream);
+                    line = IOUtil.readLine(requestMeta);
                 }
                 if(extraHeaderBuffer.length()>0){
                     logger.trace("[额外头部]{}",extraHeaderBuffer.toString());

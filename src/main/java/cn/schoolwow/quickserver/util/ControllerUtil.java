@@ -46,9 +46,8 @@ public class ControllerUtil {
     /**注入依赖与扫描注解*/
     public static void refresh() {
         quickBeans.refresh();
-        List<String> beanNameSet = quickBeans.getBeanNameList();
-        for(String beanName:beanNameSet){
-            doScan(quickBeans.getBean(beanName).getClass());
+        for(Class _class:quickBeans.getBeanClassList()){
+            doScan(_class);
         }
     }
 
@@ -69,7 +68,7 @@ public class ControllerUtil {
     private static void doScan(Class c){
         //注册拦截器
         Interceptor interceptor = (Interceptor) c.getDeclaredAnnotation(Interceptor.class);
-        if(interceptor!=null){
+        if(interceptor!=null&&!c.getName().equals("cn.schoolwow.quickserver.interceptor.HandlerInterceptor")){
             Filter filter = new Filter();
             filter.patterns = interceptor.patterns();
             filter.excludePatterns = interceptor.excludePatterns();
