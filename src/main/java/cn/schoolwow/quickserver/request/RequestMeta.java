@@ -5,7 +5,6 @@ import cn.schoolwow.quickserver.domain.Request;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 

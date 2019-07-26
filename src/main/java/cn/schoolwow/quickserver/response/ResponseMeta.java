@@ -1,5 +1,7 @@
 package cn.schoolwow.quickserver.response;
 
+import cn.schoolwow.quickserver.request.RequestMeta;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
@@ -124,12 +126,18 @@ public class ResponseMeta {
         this.forward = url;
     }
 
-    public void response(HttpStatus httpStatus){
+    public void response(HttpStatus httpStatus, RequestMeta requestMeta){
         this.status = httpStatus.status;
         this.statusMessage = httpStatus.statusMessage;
         if(this.status>=400&&this.status<=599){
-            this.body = this.statusMessage;
-            this.contentType = "text/plain; charset="+charset;
+            StringBuilder bodyBuilder = new StringBuilder();
+            bodyBuilder.append("<b>status:</b>"+this.status+"<br/>");
+            bodyBuilder.append("<b>statusMessage:</b>"+this.statusMessage+"<br/>");
+            bodyBuilder.append("<b>url:</b>"+requestMeta.requestURI+"<br/>");
+            bodyBuilder.append("<b>method:</b>"+requestMeta.method+"<br/>");
+            bodyBuilder.append("<b>ip:</b>"+requestMeta.remoteAddress.getHostAddress()+"<br/>");
+            this.body = bodyBuilder.toString();
+            this.contentType = "text/html; charset="+charset;
         }
     }
 }

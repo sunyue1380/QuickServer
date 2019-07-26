@@ -104,7 +104,7 @@ public class QuickServer {
                 } catch (Exception e) {
                     e.printStackTrace();
                     try {
-                        responseMeta.response(ResponseMeta.HttpStatus.INTERNAL_SERVER_ERROR);
+                        responseMeta.response(ResponseMeta.HttpStatus.INTERNAL_SERVER_ERROR,requestMeta);
                         ResponseHandler.handleResponse(requestMeta,responseMeta);
                         socket.close();
                     } catch (Exception ex) {
@@ -127,6 +127,7 @@ public class QuickServer {
         //处理重定向
         if(null!=responseMeta.forward){
             requestMeta.requestURI = responseMeta.forward;
+            requestMeta.invokeMethod = null;
             handleRequest(requestMeta,responseMeta,sessionMeta);
         }
         if(responseMeta.body!=null){
@@ -181,7 +182,7 @@ public class QuickServer {
         //判断请求路径
         {
             if(requestMeta.invokeMethod==null){
-                responseMeta.response(ResponseMeta.HttpStatus.NOT_FOUND);
+                responseMeta.response(ResponseMeta.HttpStatus.NOT_FOUND,requestMeta);
                 return;
             }
         }
@@ -200,7 +201,7 @@ public class QuickServer {
                 }
             }
             if(!support){
-                responseMeta.response(ResponseMeta.HttpStatus.METHOD_NOT_ALLOWED);
+                responseMeta.response(ResponseMeta.HttpStatus.METHOD_NOT_ALLOWED,requestMeta);
                 return;
             }
         }
@@ -212,14 +213,14 @@ public class QuickServer {
             }
             if(basicAuth!=null){
                 if(requestMeta.authorization==null){
-                    responseMeta.response(ResponseMeta.HttpStatus.UNAUTHORIZED);
+                    responseMeta.response(ResponseMeta.HttpStatus.UNAUTHORIZED,requestMeta);
                     responseMeta.headers.put("WWW-Authenticate","Basic realm=\""+basicAuth.realm()+"\"");
                     return;
                 }
                 String auth = requestMeta.authorization.substring(requestMeta.authorization.indexOf("Basic ")+6);
                 String targetAuth = new String(Base64.getEncoder().encode((basicAuth.username()+":"+basicAuth.password()).getBytes()));
                 if(!targetAuth.equals(auth)){
-                    responseMeta.response(ResponseMeta.HttpStatus.UNAUTHORIZED);
+                    responseMeta.response(ResponseMeta.HttpStatus.UNAUTHORIZED,requestMeta);
                     responseMeta.headers.put("WWW-Authenticate","Basic realm=\""+basicAuth.realm()+"\"");
                     return;
                 }
@@ -241,7 +242,7 @@ public class QuickServer {
             logger.debug("[调用方法]请求路径:[{}],调用方法:{}",requestMeta.method+" "+requestMeta.requestURI,requestMeta.invokeMethod.toString());
             result = handleInvokeMethod(requestMeta,responseMeta,sessionMeta);
             if(responseMeta.status==0){
-                responseMeta.response(ResponseMeta.HttpStatus.OK);
+                responseMeta.response(ResponseMeta.HttpStatus.OK,requestMeta);
             }
             if(responseMeta.contentType==null){
                 responseMeta.contentType = "text/plain;";
@@ -297,18 +298,17 @@ public class QuickServer {
                     mappingPos++;
                 }
             }
-            if(mappingUrl.contains("{")&&!AntPatternUtil.doMatch(requestURI,antRequestUrl)
-                    ||!requestURI.equals(mappingUrl)){
-                continue;
-            }
-            if(request.requestMethods.length==0){
-                requestMeta.invokeMethod = request.method;
-            }else{
-                //判断请求方法是否匹配
-                for(RequestMethod requestMethod:request.requestMethods){
-                    if(requestMethod.name().equals(requestMeta.method)){
-                        requestMeta.invokeMethod = request.method;
-                        break;
+            if((mappingUrl.contains("{")&&AntPatternUtil.doMatch(requestURI,antRequestUrl))
+                    ||requestURI.equals(mappingUrl)){
+                if(request.requestMethods.length==0){
+                    requestMeta.invokeMethod = request.method;
+                }else{
+                    //判断请求方法是否匹配
+                    for(RequestMethod requestMethod:request.requestMethods){
+                        if(requestMethod.name().equals(requestMeta.method)){
+                            requestMeta.invokeMethod = request.method;
+                            break;
+                        }
                     }
                 }
             }
@@ -347,7 +347,7 @@ public class QuickServer {
                         if(null!=requestParam){
                             String requestParameter = requestMeta.parameters.get(requestParam.name());
                             if(requestParam.required()&&requestParameter==null){
-                                responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST);
+                                responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST,requestMeta);
                                 responseMeta.body = "请求参数["+requestParam.name()+"]不能为空!";
                                 return null;
                             }
@@ -363,7 +363,7 @@ public class QuickServer {
                         if(null!=requestPart){
                             MultipartFile multipartFile = requestMeta.fileParameters.get(requestPart.name());
                             if(requestPart.required()&&multipartFile==null){
-                                responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST);
+                                responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST,requestMeta);
                                 responseMeta.body = "请求参数["+requestPart.name()+"]不能为空!";
                                 return null;
                             }
@@ -407,7 +407,7 @@ public class QuickServer {
                         PathVariable pathVariable = parameter.getAnnotation(PathVariable.class);
                         if(null!=pathVariable){
                             if(pathVariable.required()&&!requestMeta.pathVariable.containsKey(pathVariable.name())){
-                                responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST);
+                                responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST,requestMeta);
                                 responseMeta.body = "路径变量["+pathVariable.name()+"]不能为空!";
                                 return null;
                             }
@@ -559,7 +559,7 @@ public class QuickServer {
             }break;
         }
         logger.debug("[访问静态资源]请求路径:{},资源路径:{}",requestMeta.requestURI,url.toString());
-        responseMeta.response(ResponseMeta.HttpStatus.OK);
+        responseMeta.response(ResponseMeta.HttpStatus.OK,requestMeta);
         responseMeta.staticURL = url;
         responseMeta.contentType = MIMEUtil.getMIMEType(requestMeta.requestURI);
         responseMeta.contentLength = responseMeta.inputStream.available();
