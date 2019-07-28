@@ -104,6 +104,12 @@ public class ControllerUtil {
             request.antPatternUrl = mappingUrl.replaceAll("\\{\\w+\\}","\\*");
             request.requestPattern = Pattern.compile("\\{(\\w+)\\}");
             request.regexUrlPattern = Pattern.compile(mappingUrl.replaceAll("\\{(\\w+)\\}","\\(\\\\w\\+\\)"));
+            //将请求方法也作为key值
+            if(requestMethods.length>0){
+                for(RequestMethod requestMethod:request.requestMethods){
+                    mappingUrl+=requestMethod.name()+"_";
+                }
+            }
             requestMappingHandler.put(mappingUrl,request);
         }
     }

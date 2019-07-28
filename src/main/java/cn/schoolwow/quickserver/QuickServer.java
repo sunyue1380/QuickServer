@@ -376,6 +376,10 @@ public class QuickServer {
                         if(null!=requestBody){
                             if("java.lang.String".equals(parameterType)){
                                 parameterList.add(requestMeta.body);
+                            }else if("com.alibaba.fastjson.JSONObject".equals(parameterType)){
+                                parameterList.add(JSON.parseObject(requestMeta.body));
+                            }else if("com.alibaba.fastjson.JSONArray".equals(parameterType)){
+                                parameterList.add(JSON.parseArray(requestMeta.body));
                             }else if("java.io.InputStream".equals(parameterType)){
                                 parameterList.add(requestMeta.inputStream);
                             }
