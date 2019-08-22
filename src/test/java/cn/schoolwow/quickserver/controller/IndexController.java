@@ -10,6 +10,7 @@ import cn.schoolwow.quickserver.util.QuickServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.File;
 import java.util.Date;
@@ -20,6 +21,11 @@ public class IndexController {
     private Logger logger = LoggerFactory.getLogger(IndexController.class);
     @Resource
     private IndexService indexService;
+
+    @PostConstruct
+    public void initialization(){
+        logger.info("[初始化]初始化方法调用了");
+    }
 
     @RequestMapping(value = "/register",method = RequestMethod.POST)
     public boolean register(

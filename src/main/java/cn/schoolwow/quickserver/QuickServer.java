@@ -324,104 +324,106 @@ public class QuickServer {
     private Object handleInvokeMethod(RequestMeta requestMeta,ResponseMeta responseMeta,SessionMeta sessionMeta) throws Exception {
         Object controller = requestMeta.request.instance;
         Parameter[] parameters = requestMeta.invokeMethod.getParameters();
+        Object result = null;
         if(parameters.length==0){
-            return requestMeta.invokeMethod.invoke(controller);
-        }
-        List<Object> parameterList = new ArrayList<>();
-        for(Parameter parameter:parameters){
-            String parameterType = parameter.getType().getName();
-            switch(parameterType){
-                case "cn.schoolwow.quickserver.request.RequestMeta":{
-                    parameterList.add(requestMeta);
-                }break;
-                case "cn.schoolwow.quickserver.response.ResponseMeta":{
-                    parameterList.add(responseMeta);
-                }break;
-                case "cn.schoolwow.quickserver.session.SessionMeta":{
-                    parameterList.add(sessionMeta);
-                }break;
-                default:{
-                    //处理RequestParam
-                    {
-                        RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
-                        if(null!=requestParam){
-                            String requestParameter = requestMeta.parameters.get(requestParam.name());
-                            if(requestParam.required()&&requestParameter==null){
-                                responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST,requestMeta);
-                                responseMeta.body = "请求参数["+requestParam.name()+"]不能为空!";
-                                return null;
-                            }
-                            if(requestParameter==null){
-                                requestParameter = requestParam.defaultValue();
-                            }
-                            parameterList.add(ControllerUtil.castParameter(parameter,requestParameter,requestParam.pattern()));
-                        }
-                    }
-                    //处理RequestPart
-                    {
-                        RequestPart requestPart = parameter.getAnnotation(RequestPart.class);
-                        if(null!=requestPart){
-                            MultipartFile multipartFile = requestMeta.fileParameters.get(requestPart.name());
-                            if(requestPart.required()&&multipartFile==null){
-                                responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST,requestMeta);
-                                responseMeta.body = "请求参数["+requestPart.name()+"]不能为空!";
-                                return null;
-                            }
-                            parameterList.add(multipartFile);
-                        }
-                    }
-                    //处理RequestBody
-                    {
-                        RequestBody requestBody = parameter.getAnnotation(RequestBody.class);
-                        if(null!=requestBody){
-                            if("java.lang.String".equals(parameterType)){
-                                parameterList.add(requestMeta.body);
-                            }else if("com.alibaba.fastjson.JSONObject".equals(parameterType)){
-                                parameterList.add(JSON.parseObject(requestMeta.body));
-                            }else if("com.alibaba.fastjson.JSONArray".equals(parameterType)){
-                                parameterList.add(JSON.parseArray(requestMeta.body));
-                            }else if("java.io.InputStream".equals(parameterType)){
-                                parameterList.add(requestMeta.inputStream);
+            result = requestMeta.invokeMethod.invoke(controller);
+        }else{
+            List<Object> parameterList = new ArrayList<>();
+            for(Parameter parameter:parameters){
+                String parameterType = parameter.getType().getName();
+                switch(parameterType){
+                    case "cn.schoolwow.quickserver.request.RequestMeta":{
+                        parameterList.add(requestMeta);
+                    }break;
+                    case "cn.schoolwow.quickserver.response.ResponseMeta":{
+                        parameterList.add(responseMeta);
+                    }break;
+                    case "cn.schoolwow.quickserver.session.SessionMeta":{
+                        parameterList.add(sessionMeta);
+                    }break;
+                    default:{
+                        //处理RequestParam
+                        {
+                            RequestParam requestParam = parameter.getAnnotation(RequestParam.class);
+                            if(null!=requestParam){
+                                String requestParameter = requestMeta.parameters.get(requestParam.name());
+                                if(requestParam.required()&&requestParameter==null){
+                                    responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST,requestMeta);
+                                    responseMeta.body = "请求参数["+requestParam.name()+"]不能为空!";
+                                    return null;
+                                }
+                                if(requestParameter==null){
+                                    requestParameter = requestParam.defaultValue();
+                                }
+                                parameterList.add(ControllerUtil.castParameter(parameter,requestParameter,requestParam.pattern()));
                             }
                         }
-                    }
-                    //处理SessionAttribute
-                    {
-                        SessionAttribute sessionAttribute = parameter.getAnnotation(SessionAttribute.class);
-                        if(null!=sessionAttribute){
-                            parameterList.add(parameter.getType().getConstructor(String.class).newInstance(sessionMeta.attributes.get(sessionAttribute.name())));
-                        }
-                    }
-                    //处理CookieValue
-                    {
-                        CookieValue cookieValue = parameter.getAnnotation(CookieValue.class);
-                        if(null!=cookieValue){
-                            parameterList.add(requestMeta.cookies.get(cookieValue.name()));
-                        }
-                    }
-                    //处理RequestHeader
-                    {
-                        RequestHeader requestHeader = parameter.getAnnotation(RequestHeader.class);
-                        if(null!=requestHeader){
-                            parameterList.add(requestMeta.headers.get(requestHeader.name().toLowerCase()));
-                        }
-                    }
-                    //处理PathVariable
-                    {
-                        PathVariable pathVariable = parameter.getAnnotation(PathVariable.class);
-                        if(null!=pathVariable){
-                            if(pathVariable.required()&&!requestMeta.pathVariable.containsKey(pathVariable.name())){
-                                responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST,requestMeta);
-                                responseMeta.body = "路径变量["+pathVariable.name()+"]不能为空!";
-                                return null;
+                        //处理RequestPart
+                        {
+                            RequestPart requestPart = parameter.getAnnotation(RequestPart.class);
+                            if(null!=requestPart){
+                                MultipartFile multipartFile = requestMeta.fileParameters.get(requestPart.name());
+                                if(requestPart.required()&&multipartFile==null){
+                                    responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST,requestMeta);
+                                    responseMeta.body = "请求参数["+requestPart.name()+"]不能为空!";
+                                    return null;
+                                }
+                                parameterList.add(multipartFile);
                             }
-                            parameterList.add(ControllerUtil.castParameter(parameter,requestMeta.pathVariable.get(pathVariable.name()),null));
+                        }
+                        //处理RequestBody
+                        {
+                            RequestBody requestBody = parameter.getAnnotation(RequestBody.class);
+                            if(null!=requestBody){
+                                if("java.lang.String".equals(parameterType)){
+                                    parameterList.add(requestMeta.body);
+                                }else if("com.alibaba.fastjson.JSONObject".equals(parameterType)){
+                                    parameterList.add(JSON.parseObject(requestMeta.body));
+                                }else if("com.alibaba.fastjson.JSONArray".equals(parameterType)){
+                                    parameterList.add(JSON.parseArray(requestMeta.body));
+                                }else if("java.io.InputStream".equals(parameterType)){
+                                    parameterList.add(requestMeta.inputStream);
+                                }
+                            }
+                        }
+                        //处理SessionAttribute
+                        {
+                            SessionAttribute sessionAttribute = parameter.getAnnotation(SessionAttribute.class);
+                            if(null!=sessionAttribute){
+                                parameterList.add(parameter.getType().getConstructor(String.class).newInstance(sessionMeta.attributes.get(sessionAttribute.name())));
+                            }
+                        }
+                        //处理CookieValue
+                        {
+                            CookieValue cookieValue = parameter.getAnnotation(CookieValue.class);
+                            if(null!=cookieValue){
+                                parameterList.add(requestMeta.cookies.get(cookieValue.name()));
+                            }
+                        }
+                        //处理RequestHeader
+                        {
+                            RequestHeader requestHeader = parameter.getAnnotation(RequestHeader.class);
+                            if(null!=requestHeader){
+                                parameterList.add(requestMeta.headers.get(requestHeader.name().toLowerCase()));
+                            }
+                        }
+                        //处理PathVariable
+                        {
+                            PathVariable pathVariable = parameter.getAnnotation(PathVariable.class);
+                            if(null!=pathVariable){
+                                if(pathVariable.required()&&!requestMeta.pathVariable.containsKey(pathVariable.name())){
+                                    responseMeta.response(ResponseMeta.HttpStatus.BAD_REQUEST,requestMeta);
+                                    responseMeta.body = "路径变量["+pathVariable.name()+"]不能为空!";
+                                    return null;
+                                }
+                                parameterList.add(ControllerUtil.castParameter(parameter,requestMeta.pathVariable.get(pathVariable.name()),null));
+                            }
                         }
                     }
                 }
             }
+            result = requestMeta.invokeMethod.invoke(controller,parameterList.toArray(new Object[]{parameterList.size()}));
         }
-        Object result = requestMeta.invokeMethod.invoke(controller,parameterList.toArray(new Object[]{parameterList.size()}));
         if(result==null){
             return null;
         }
