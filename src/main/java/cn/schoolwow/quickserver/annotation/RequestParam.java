@@ -8,12 +8,23 @@ import java.lang.annotation.Target;
 @Target({ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequestParam {
-    /**参数值*/
+    /**
+     * 参数值
+     */
     String name();
-    /**是否必须*/
+
+    /**
+     * 是否必须
+     */
     boolean required() default true;
-    /**参数默认值*/
+
+    /**
+     * 参数默认值
+     */
     String defaultValue() default "";
-    /**日期格式*/
+
+    /**
+     * 日期格式
+     */
     String pattern() default "";
 }

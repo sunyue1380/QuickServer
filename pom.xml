@@ -52,6 +52,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>cn.schoolwow</groupId>
+            <artifactId>QuickBeans</artifactId>
+            <version>1.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.2.3</version>
@@ -61,11 +66,6 @@
             <artifactId>fastjson</artifactId>
             <version>1.2.38</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>cn.schoolwow</groupId>
-            <artifactId>QuickBeans</artifactId>
-            <version>1.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>cn.schoolwow</groupId>
@@ -81,13 +81,40 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>logback.xml</exclude>
+                </excludes>
+            </resource>
+        </resources>
+    </build>
+
     <profiles>
         <profile>
-            <!-- 打包的 -P参数 -->
-            <id>release</id>
+            <id>schoolwow</id>
+            <distributionManagement>
+                <repository>
+                    <id>schoolwow</id>
+                    <name>schoolwow-release</name>
+                    <url>http://maven.schoolwow.cn/content/repositories/releases/</url>
+                </repository>
+                <snapshotRepository>
+                    <id>schoolwow</id>
+                    <name>schoolwow-snapshot</name>
+                    <url>http://maven.schoolwow.cn/content/repositories/snapshots/</url>
+                </snapshotRepository>
+            </distributionManagement>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
+            <id>sonatype-oss-release</id>
             <build>
                 <plugins>
-                    <!-- Source -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
@@ -101,7 +128,6 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <!-- Javadoc -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
@@ -118,7 +144,6 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <!-- GPG  打包插件-->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
@@ -144,22 +169,6 @@
                     <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
             </distributionManagement>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
         </profile>
     </profiles>
-
-    <build>
-        <resources>
-            <resource>
-                <directory>${baseDir}</directory>
-                <excludes>
-                    <exclude>**/*.html</exclude>
-                    <exclude>**/*.png</exclude>
-                </excludes>
-            </resource>
-        </resources>
-    </build>
-
 </project>

@@ -8,5 +8,8 @@ import java.lang.annotation.Target;
 @Target({ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequestBody {
-
+    /**
+     * 是否必须
+     */
+    boolean required() default true;
 }

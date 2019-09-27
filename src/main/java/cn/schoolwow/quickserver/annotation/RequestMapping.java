@@ -5,11 +5,16 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ElementType.METHOD,ElementType.TYPE})
+@Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequestMapping {
-    /**映射路径*/
+    /**
+     * 映射路径
+     */
     String value() default "";
-    /**请求方法*/
+
+    /**
+     * 请求方法
+     */
     RequestMethod[] method() default {};
 }

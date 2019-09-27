@@ -8,8 +8,13 @@ import java.lang.annotation.Target;
 @Target({ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequestPart {
-    /**参数值*/
+    /**
+     * 参数值
+     */
     String name();
-    /**是否必须*/
+
+    /**
+     * 是否必须
+     */
     boolean required() default true;
 }

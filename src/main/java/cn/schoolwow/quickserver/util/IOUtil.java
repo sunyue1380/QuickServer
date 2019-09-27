@@ -12,18 +12,20 @@ public class IOUtil {
     private static final int CR = 0x0D;
     private static final int LF = 0x0A;
 
-    /**读取一行*/
+    /**
+     * 读取一行
+     */
     public static String readLine(RequestMeta requestMeta) throws IOException {
         InputStream inputStream = requestMeta.inputStream;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int b;
-        while((b = inputStream.read())!=-1){
-            if(b==CR){
+        while ((b = inputStream.read()) != -1) {
+            if (b == CR) {
                 //遇到换行时停止
                 b = inputStream.read();
-                if(b==LF){
+                if (b == LF) {
                     break;
-                }else{
+                } else {
                     baos.write(CR);
                     baos.write(b);
                     continue;

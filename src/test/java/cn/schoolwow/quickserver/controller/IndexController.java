@@ -7,6 +7,7 @@ import cn.schoolwow.quickserver.response.ResponseMeta;
 import cn.schoolwow.quickserver.service.IndexService;
 import cn.schoolwow.quickserver.session.SessionMeta;
 import cn.schoolwow.quickserver.util.QuickServerConfig;
+import cn.schoolwow.quickserver.vo.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,11 +22,6 @@ public class IndexController {
     private Logger logger = LoggerFactory.getLogger(IndexController.class);
     @Resource
     private IndexService indexService;
-
-    @PostConstruct
-    public void initialization(){
-        logger.info("[初始化]初始化方法调用了");
-    }
 
     @RequestMapping(value = "/register",method = RequestMethod.POST)
     public boolean register(
@@ -63,11 +59,15 @@ public class IndexController {
     public boolean upload(
             @RequestPart(name = "file") MultipartFile multipartFile,
             @RequestParam(name = "username") String username,
-            @RequestParam(name = "password") String password
+            @RequestParam(name = "password") String password,
+            SessionMeta sessionMeta
             ){
         logger.info("[读取普通字段]username:{},password:{}",username,password);
         logger.info("[上传文件]文件对象:{}",multipartFile);
-        File file = new File(new File(".").getAbsolutePath()+"/files/"+multipartFile.originalFilename);
+        File file = new File(sessionMeta.getRealPath()+"/files/"+multipartFile.originalFilename);
+        if(!file.getParentFile().exists()){
+            file.getParentFile().mkdirs();
+        }
         multipartFile.transferTo(file);
         return file.exists();
     }
@@ -78,6 +78,14 @@ public class IndexController {
     ){
         logger.info("[重定向]目标:{},","/redirect.html");
         responseMeta.redirect("/redirect.html");
+    }
+
+    @RequestMapping(value = "/forward",method = RequestMethod.GET)
+    public void forward(
+            ResponseMeta responseMeta
+    ){
+        logger.info("[转发]目标:{},","/redirect.html");
+        responseMeta.forward("/redirect.html");
     }
 
     @RequestMapping(value = "/crossOrigin",method = {RequestMethod.GET,RequestMethod.POST})
@@ -122,6 +130,22 @@ public class IndexController {
             @PathVariable(name = "userId") int userId
     ){
         logger.info("[路径变量]userId:{}",userId);
+        return true;
+    }
+
+    @RequestMapping(value = "/showUserJSON",method = {RequestMethod.POST})
+    public boolean showUserJSON(
+            @RequestBody User user
+    ){
+        logger.info("[显示用户]user:{}",user);
+        return true;
+    }
+
+    @RequestMapping(value = "/showUserForm",method = {RequestMethod.POST})
+    public boolean showUserForm(
+            User user
+    ){
+        logger.info("[显示用户]user:{}",user);
         return true;
     }
 }

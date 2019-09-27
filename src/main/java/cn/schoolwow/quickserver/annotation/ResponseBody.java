@@ -5,9 +5,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ElementType.METHOD,ElementType.TYPE})
+@Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ResponseBody {
-    /**返回值类型*/
+    /**
+     * 返回值类型
+     */
     ResponseBodyType value() default ResponseBodyType.String;
 }

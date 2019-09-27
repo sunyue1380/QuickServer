@@ -11,9 +11,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**http返回元信息*/
+/**
+ * http返回元信息
+ */
 public class ResponseMeta {
-    public enum HttpStatus{
+    public enum HttpStatus {
         CONTINUE(100, "Continue"),
         SWITCHING_PROTOCOLS(101, "Switching Protocols"),
         PROCESSING(102, "Processing"),
@@ -49,9 +51,9 @@ public class ResponseMeta {
         GONE(410, "Gone"),
         LENGTH_REQUIRED(411, "Length Required"),
         PRECONDITION_FAILED(412, "Precondition Failed"),
-//        PAYLOAD_TOO_LARGE(413, "Payload Too Large"),
+        //        PAYLOAD_TOO_LARGE(413, "Payload Too Large"),
         REQUEST_ENTITY_TOO_LARGE(413, "Request Entity Too Large"),
-//        URI_TOO_LONG(414, "URI Too Long"),
+        //        URI_TOO_LONG(414, "URI Too Long"),
         REQUEST_URI_TOO_LONG(414, "Request-URI Too Long"),
         UNSUPPORTED_MEDIA_TYPE(415, "Unsupported Media Type"),
         REQUESTED_RANGE_NOT_SATISFIABLE(416, "Requested range not satisfiable"),
@@ -89,55 +91,82 @@ public class ResponseMeta {
             this.statusMessage = statusMessage;
         }
     }
-    /**状态*/
+
+    /**
+     * 状态
+     */
     public int status;
-    /**消息*/
+    /**
+     * 消息
+     */
     public String statusMessage;
-    /**协议*/
+    /**
+     * 协议
+     */
     public String protocol;
-    /**http头部*/
-    public Map<String,String> headers = new HashMap<>();
-    /**Cookie列表*/
+    /**
+     * http头部
+     */
+    public Map<String, String> headers = new HashMap<>();
+    /**
+     * Cookie列表
+     */
     public List<HttpCookie> cookies = new ArrayList<>();
-    /**body*/
+    /**
+     * body
+     */
     public String body;
-    /**静态资源*/
+    /**
+     * 静态资源
+     */
     public URL staticURL;
-    /**静态资源*/
+    /**
+     * 静态资源
+     */
     public InputStream inputStream;
-    /**转发*/
+    /**
+     * 转发
+     */
     public String forward;
-    /**默认编码*/
+    /**
+     * 默认编码
+     */
     public String charset = "utf-8";
-    /**主体类型*/
+    /**
+     * 主体类型
+     */
     public String contentType = "text/plain";
-    /**主体长度*/
+    /**
+     * 主体长度
+     */
     public long contentLength;
-    /**原始输出流*/
+    /**
+     * 原始输出流
+     */
     public OutputStream outputStream;
 
-    public void redirect(String url){
+    public void redirect(String url) {
         this.status = HttpStatus.FOUND.status;
         this.statusMessage = HttpStatus.FOUND.statusMessage;
-        this.headers.put("Location",url);
+        this.headers.put("Location", url);
     }
 
-    public void forward(String url){
+    public void forward(String url) {
         this.forward = url;
     }
 
-    public void response(HttpStatus httpStatus, RequestMeta requestMeta){
+    public void response(HttpStatus httpStatus, RequestMeta requestMeta) {
         this.status = httpStatus.status;
         this.statusMessage = httpStatus.statusMessage;
-        if(this.status>=400&&this.status<=599){
+        if (this.status >= 400 && this.status <= 599) {
             StringBuilder bodyBuilder = new StringBuilder();
-            bodyBuilder.append("<b>status:</b>"+this.status+"<br/>");
-            bodyBuilder.append("<b>statusMessage:</b>"+this.statusMessage+"<br/>");
-            bodyBuilder.append("<b>url:</b>"+requestMeta.requestURI+"<br/>");
-            bodyBuilder.append("<b>method:</b>"+requestMeta.method+"<br/>");
-            bodyBuilder.append("<b>ip:</b>"+requestMeta.remoteAddress.getHostAddress()+"<br/>");
+            bodyBuilder.append("<b>status:</b>" + this.status + "<br/>");
+            bodyBuilder.append("<b>statusMessage:</b>" + this.statusMessage + "<br/>");
+            bodyBuilder.append("<b>url:</b>" + requestMeta.requestURI + "<br/>");
+            bodyBuilder.append("<b>method:</b>" + requestMeta.method + "<br/>");
+            bodyBuilder.append("<b>ip:</b>" + requestMeta.remoteAddress.getHostAddress() + "<br/>");
             this.body = bodyBuilder.toString();
-            this.contentType = "text/html; charset="+charset;
+            this.contentType = "text/html; charset=" + charset;
         }
     }
 }

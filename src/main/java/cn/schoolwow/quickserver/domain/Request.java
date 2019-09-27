@@ -3,22 +3,29 @@ package cn.schoolwow.quickserver.domain;
 import cn.schoolwow.quickserver.annotation.RequestMethod;
 
 import java.lang.reflect.Method;
-import java.util.regex.Pattern;
 
-/**请求类*/
+/**
+ * 请求类
+ */
 public class Request {
-    /**映射路径*/
+    /**
+     * 映射路径
+     */
     public String mappingUrl;
-    /**匹配方法*/
+    /**
+     * 匹配方法
+     */
     public RequestMethod[] requestMethods;
-    /**Ant模式路径*/
+    /**
+     * Ant模式路径
+     */
     public String antPatternUrl;
-    /**原始模式*/
-    public Pattern requestPattern;
-    /**正则表达式模式*/
-    public Pattern regexUrlPattern;
-    /**关联方法*/
+    /**
+     * 关联方法
+     */
     public Method method;
-    /**控制器实例*/
+    /**
+     * 控制器实例
+     */
     public Object instance;
 }
