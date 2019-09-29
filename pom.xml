@@ -6,7 +6,7 @@
 
     <groupId>cn.schoolwow</groupId>
     <artifactId>QuickServer</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.2</version>
 
     <name>QuickServer</name>
     <url>https://github.com/sunyue1380/QuickServer</url>

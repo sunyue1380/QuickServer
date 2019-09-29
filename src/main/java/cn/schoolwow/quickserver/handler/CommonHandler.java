@@ -306,6 +306,6 @@ public class CommonHandler {
         responseMeta.response(ResponseMeta.HttpStatus.OK, requestMeta);
         responseMeta.contentType = MIMEUtil.getMIMEType(requestMeta.requestURI);
         responseMeta.contentLength = responseMeta.inputStream.available();
-        logger.info("[访问静态资源]请求路径:{},资源路径:{}", requestMeta.requestURI, responseMeta.staticURL.toString());
+        logger.debug("[访问静态资源]请求路径:{},资源路径:{}", requestMeta.requestURI, responseMeta.staticURL.toString());
     }
 }

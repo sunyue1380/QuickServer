@@ -94,6 +94,7 @@ public class QuickServer {
                 //TODO 实现AIO模型
             };break;
         }
+        logger.debug("[开启服务器]http://127.0.0.1:{}{}",port,indexPage);
         ioServer.startServer(port);
     }
 

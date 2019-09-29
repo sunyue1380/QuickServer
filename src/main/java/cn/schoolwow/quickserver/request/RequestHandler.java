@@ -129,7 +129,7 @@ public class RequestHandler {
                 }
             }
         }
-        logger.info("[请求行]{}", requestMeta.method + " " + requestMeta.requestURI);
+        logger.debug("[请求行]{}", requestMeta.method + " " + requestMeta.requestURI);
     }
 
     /**
