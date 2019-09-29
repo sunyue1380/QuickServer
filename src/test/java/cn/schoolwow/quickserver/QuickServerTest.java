@@ -25,7 +25,7 @@ public class QuickServerTest {
         QuickServer.newInstance()
                 .scan("cn.schoolwow.quickserver.controller")
                 .scan("cn.schoolwow.quickserver.service")
-                .asyncStart();
+                .start();
     }
 
     @Test
