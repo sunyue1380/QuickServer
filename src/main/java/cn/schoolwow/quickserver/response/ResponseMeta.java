@@ -101,10 +101,6 @@ public class ResponseMeta {
      */
     public String statusMessage;
     /**
-     * 协议
-     */
-    public String protocol;
-    /**
      * http头部
      */
     public Map<String, String> headers = new HashMap<>();

@@ -41,14 +41,16 @@ public class RequestHandler {
                     }
                 }
             }
-            logger.trace("[读取头部信息]{}", httpHeaderBuffer.toString());
             if (httpHeaderBuffer.toString().trim().isEmpty()) {
-                return;
+                throw new IOException("头部信息读取为空!");
             }
             String[] headerLines = httpHeaderBuffer.toString().split("\r\n");
             //处理请求行
             {
                 String firstLine = headerLines[0];
+                if(!firstLine.contains(" ")){
+                    throw new IOException("读取请求行失败!当前请求行:"+firstLine);
+                }
                 requestMeta.method = firstLine.substring(0, firstLine.indexOf(" ")).toUpperCase();
                 firstLine = firstLine.substring(firstLine.indexOf(" ") + 1);
                 String requestURI = firstLine.substring(0, firstLine.indexOf(" "));
@@ -70,6 +72,10 @@ public class RequestHandler {
             //处理header
             {
                 for (int i = 1; i < headerLines.length; i++) {
+                    if(!headerLines[i].contains(":")){
+                        logger.warn("[头部字段不包含冒号]当前头部字段信息:{}",headerLines[i]);
+                        continue;
+                    }
                     String name = headerLines[i].substring(0, headerLines[i].indexOf(":"));
                     String value = headerLines[i].substring(headerLines[i].indexOf(":") + 2);
                     requestMeta.headers.put(name, value);

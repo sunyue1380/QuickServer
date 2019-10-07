@@ -1,15 +1,23 @@
 package cn.schoolwow.quickserver;
 
+import cn.schoolwow.quickserver.handler.CommonHandler;
 import cn.schoolwow.quickserver.handler.ControllerHandler;
 import cn.schoolwow.quickserver.handler.ControllerMeta;
-import cn.schoolwow.quickserver.io.AbstractIOServer;
-import cn.schoolwow.quickserver.io.BIOServer;
-import cn.schoolwow.quickserver.io.IOServerType;
+import cn.schoolwow.quickserver.request.RequestHandler;
+import cn.schoolwow.quickserver.request.RequestMeta;
+import cn.schoolwow.quickserver.response.ResponseHandler;
+import cn.schoolwow.quickserver.response.ResponseMeta;
+import cn.schoolwow.quickserver.session.SessionHandler;
+import cn.schoolwow.quickserver.session.SessionMeta;
 import cn.schoolwow.quickserver.util.QuickServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +28,6 @@ public class QuickServer {
     private String indexPage = "/index.html";
     private ControllerMeta controllerMeta = new ControllerMeta();
     private ThreadPoolExecutor threadPoolExecutor;
-    private IOServerType ioServerType = IOServerType.BIO;
 
     public static QuickServer newInstance() {
         return new QuickServer();
@@ -51,11 +58,6 @@ public class QuickServer {
         return this;
     }
 
-    public QuickServer io(IOServerType ioServerType) {
-        this.ioServerType = ioServerType;
-        return this;
-    }
-
     /**
      * 配置压缩策略
      */
@@ -81,21 +83,41 @@ public class QuickServer {
 
     public void start() throws IOException {
         assureInitial();
+        ServerSocket serverSocket = new ServerSocket(port);
+        logger.info("[开启服务器]http://127.0.0.1:{}{}",port,indexPage);
+        while (true) {
+            final Socket socket = serverSocket.accept();
+            threadPoolExecutor.execute(() -> {
+                final RequestMeta requestMeta = new RequestMeta();
+                requestMeta.remoteAddress = socket.getInetAddress();
+                final ResponseMeta responseMeta = new ResponseMeta();
+                try {
+                    requestMeta.inputStream = new BufferedInputStream(socket.getInputStream());
+                    responseMeta.outputStream = new BufferedOutputStream(socket.getOutputStream());
+                    RequestHandler.parseRequest(requestMeta);
+                    if (null == requestMeta.method) {
+                        return;
+                    }
 
-        AbstractIOServer ioServer = null;
-        switch (ioServerType){
-            case BIO:{
-                ioServer = new BIOServer(controllerMeta);
-            };break;
-            case NIO:{
-                //TODO 实现NIO模型
-            };break;
-            case AIO:{
-                //TODO 实现AIO模型
-            };break;
+                    SessionMeta sessionMeta = SessionHandler.handleRequest(requestMeta, responseMeta);
+                    CommonHandler.handleRequest(requestMeta, responseMeta, sessionMeta, controllerMeta);
+                    CommonHandler.handleResponse(requestMeta, responseMeta, sessionMeta, controllerMeta);
+                    ResponseHandler.handleResponse(requestMeta, responseMeta);
+                    requestMeta.inputStream.close();
+                    responseMeta.outputStream.close();
+                    socket.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    try {
+                        responseMeta.response(ResponseMeta.HttpStatus.INTERNAL_SERVER_ERROR, requestMeta);
+                        ResponseHandler.handleResponse(requestMeta, responseMeta);
+                        socket.close();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            });
         }
-        logger.debug("[开启服务器]http://127.0.0.1:{}{}",port,indexPage);
-        ioServer.startServer(port);
     }
 
     private void assureInitial() throws IOException {

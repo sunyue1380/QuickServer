@@ -11,7 +11,6 @@ import cn.schoolwow.quickserver.vo.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.File;
 import java.util.Date;
@@ -43,16 +42,16 @@ public class IndexController {
     }
 
     @RequestMapping(value = "/showUserInfo",method = RequestMethod.GET)
-    public String showUserInfo(
-            @SessionAttribute(name = "username") String username,
+    public long showUserInfo(
+            @SessionAttribute(name = "userId") long userId,
             @CookieValue(name = QuickServerConfig.SESSION) String sessionId,
             @RequestHeader(name = "Content-Type") String contentType,
             SessionMeta sessionMeta
     ){
         logger.info("[查看会话]会话id:{},属性:{}",sessionId,sessionMeta.attributes);
-        logger.info("[查看用户名]username:{}",username);
+        logger.info("[查看用户名]userId:{}",userId);
         logger.info("[查看Header]Content-Type:{}",contentType);
-        return username;
+        return userId;
     }
 
     @RequestMapping(value = "/upload",method = RequestMethod.POST)

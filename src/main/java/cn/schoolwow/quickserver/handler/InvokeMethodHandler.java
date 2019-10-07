@@ -269,7 +269,7 @@ public class InvokeMethodHandler {
             return false;
         }
         try {
-            parameterList.add(parameter.getType().getConstructor(String.class).newInstance(sessionMeta.attributes.get(sessionAttribute.name())));
+            parameterList.add(castParameter(parameter, sessionMeta.attributes.get(sessionAttribute.name()), null));
         } catch (Exception e) {
             e.printStackTrace();
             return false;

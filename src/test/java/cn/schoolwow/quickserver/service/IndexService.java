@@ -21,7 +21,7 @@ public class IndexService {
     public boolean login(String username, String password, SessionMeta sessionMeta){
         if("quickserver".equalsIgnoreCase(username)&&
                 "123456".equalsIgnoreCase(password)){
-            sessionMeta.attributes.put("username",username);
+            sessionMeta.attributes.put("userId","1");
             logger.info("[会话添加属性]会话id:{},属性:{}", sessionMeta.id,sessionMeta.attributes);
             return true;
         }else{

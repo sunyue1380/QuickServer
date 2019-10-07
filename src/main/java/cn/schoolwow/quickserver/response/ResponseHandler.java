@@ -27,7 +27,7 @@ public class ResponseHandler {
             responseMeta.headers.put("Content-Length", body.length + "");
         }
         StringBuilder result = new StringBuilder();
-        result.append(responseMeta.protocol + " " + responseMeta.status + " " + responseMeta.statusMessage + "\r\n");
+        result.append(requestMeta.protocol + " " + responseMeta.status + " " + responseMeta.statusMessage + "\r\n");
         for (Map.Entry<String, String> entry : responseMeta.headers.entrySet()) {
             result.append(entry.getKey() + ": " + entry.getValue() + "\r\n");
         }

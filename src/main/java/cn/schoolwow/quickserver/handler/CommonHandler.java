@@ -69,16 +69,10 @@ public class CommonHandler {
         {
             if (requestMeta.invokeMethod == null) {
                 responseMeta.response(ResponseMeta.HttpStatus.NOT_FOUND, requestMeta);
-                logger.warn("[请求路径不存在]路径:{},无对应处理方法.", requestMeta.requestURI);
+                logger.debug("[请求路径不存在]路径:{},无对应处理方法.", requestMeta.requestURI);
                 return;
             }
         }
-//        //判断是否支持该方法
-//        {
-//            if(InvokeMethodHandler.supportRequestMethod(requestMeta,responseMeta)){
-//                return;
-//            }
-//        }
         //处理Basic Auth
         {
             if (!handleBasicAuth(requestMeta, responseMeta)) {
@@ -179,6 +173,9 @@ public class CommonHandler {
     private static void handleCrossOrigin(RequestMeta requestMeta, ResponseMeta responseMeta, ControllerMeta controllerMeta) {
         CrossOrigin crossOrigin = requestMeta.invokeMethod.getDeclaredAnnotation(CrossOrigin.class);
         if (null == crossOrigin) {
+            crossOrigin = requestMeta.invokeMethod.getDeclaringClass().getDeclaredAnnotation(CrossOrigin.class);
+        }
+        if(null==crossOrigin){
             return;
         }
         //检查origin

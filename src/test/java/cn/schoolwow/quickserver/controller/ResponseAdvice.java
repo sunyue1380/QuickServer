@@ -5,7 +5,6 @@ import cn.schoolwow.quickserver.annotation.ResponseBodyAdvice;
 import cn.schoolwow.quickserver.request.RequestMeta;
 import cn.schoolwow.quickserver.response.ResponseMeta;
 import cn.schoolwow.quickserver.session.SessionMeta;
-import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
