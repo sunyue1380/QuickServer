@@ -29,7 +29,7 @@ public @interface CrossOrigin {
     /**
      * 允许的头部
      */
-    String[] headers() default {};
+    String[] headers() default {"*"};
 
     /**
      * 是否允许发送Cookie

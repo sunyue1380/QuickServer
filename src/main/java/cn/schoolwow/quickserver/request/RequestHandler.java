@@ -21,6 +21,7 @@ public class RequestHandler {
      * 解析Http请求
      */
     public static void parseRequest(RequestMeta requestMeta) throws IOException {
+        logger.trace("[开始解析Http请求]");
         //读取头部信息
         {
             StringBuffer httpHeaderBuffer = new StringBuffer();
@@ -41,6 +42,7 @@ public class RequestHandler {
                     }
                 }
             }
+            logger.trace("[读取头部信息]头部字段\n{}", httpHeaderBuffer.toString());
             if (httpHeaderBuffer.toString().trim().isEmpty()) {
                 throw new IOException("头部信息读取为空!");
             }
@@ -48,8 +50,8 @@ public class RequestHandler {
             //处理请求行
             {
                 String firstLine = headerLines[0];
-                if(!firstLine.contains(" ")){
-                    throw new IOException("读取请求行失败!当前请求行:"+firstLine);
+                if (!firstLine.contains(" ")) {
+                    throw new IOException("读取请求行失败!当前请求行:" + firstLine);
                 }
                 requestMeta.method = firstLine.substring(0, firstLine.indexOf(" ")).toUpperCase();
                 firstLine = firstLine.substring(firstLine.indexOf(" ") + 1);
@@ -72,8 +74,8 @@ public class RequestHandler {
             //处理header
             {
                 for (int i = 1; i < headerLines.length; i++) {
-                    if(!headerLines[i].contains(":")){
-                        logger.warn("[头部字段不包含冒号]当前头部字段信息:{}",headerLines[i]);
+                    if (!headerLines[i].contains(":")) {
+                        logger.warn("[头部字段不包含冒号]当前头部字段信息:{}", headerLines[i]);
                         continue;
                     }
                     String name = headerLines[i].substring(0, headerLines[i].indexOf(":"));
@@ -105,8 +107,20 @@ public class RequestHandler {
                             requestMeta.acceptEncoding = value;
                         }
                         break;
+                        case "transfer-encoding": {
+                            requestMeta.transformEncoding = value;
+                        }
+                        break;
                         case "cookie": {
                             requestMeta.cookies.putAll(splitParameter(value));
+                        }
+                        break;
+                        case "access-control-request-method": {
+                            requestMeta.accessControlRequestMethod = value;
+                        }
+                        break;
+                        case "access-control-request-headers": {
+                            requestMeta.accessControlRequestHeaders = value;
                         }
                         break;
                     }
@@ -143,12 +157,14 @@ public class RequestHandler {
      */
     private static void handleTransferEncoding(RequestMeta requestMeta) throws IOException {
         //分块读取
-        if (!requestMeta.headers.containsKey("transfer-encoding")) {
+        if (null == requestMeta.transformEncoding) {
             return;
         }
+        logger.trace("[处理分段传输]");
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         while (true) {
             String line = IOUtil.readLine(requestMeta);
+            logger.trace("[读取一行]行内容:{}", line);
             int length = Integer.parseInt(line, 16);
             if (length == 0) {
                 break;

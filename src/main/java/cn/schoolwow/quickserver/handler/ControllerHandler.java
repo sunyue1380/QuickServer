@@ -1,9 +1,6 @@
 package cn.schoolwow.quickserver.handler;
 
-import cn.schoolwow.quickserver.annotation.Interceptor;
-import cn.schoolwow.quickserver.annotation.RequestMapping;
-import cn.schoolwow.quickserver.annotation.RequestMethod;
-import cn.schoolwow.quickserver.annotation.ResponseBodyAdvice;
+import cn.schoolwow.quickserver.annotation.*;
 import cn.schoolwow.quickserver.domain.Filter;
 import cn.schoolwow.quickserver.domain.Request;
 import cn.schoolwow.quickserver.interceptor.HandlerInterceptor;
@@ -11,6 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 映射处理类
@@ -51,26 +51,31 @@ public class ControllerHandler {
                     if (methodRequestMapping == null) {
                         continue;
                     }
-                    String mappingUrl = bathUrl + methodRequestMapping.value();
-                    RequestMethod[] requestMethods = methodRequestMapping.method();
-                    if (requestMethods.length == 0) {
-                        logger.info("[映射路径][{}] onto {}", mappingUrl, method.toString());
-                    } else {
-                        logger.info("[映射路径][{},method={}] onto {}", mappingUrl, requestMethods, method.toString());
-                    }
                     Request request = new Request();
                     request.instance = controllerMeta.component.getBean(c.getName());
-                    request.mappingUrl = mappingUrl;
-                    request.requestMethods = methodRequestMapping.method();
+                    request.mappingUrl = bathUrl + methodRequestMapping.value();
+                    //跨域方法添加OPTION请求支持
+                    List<RequestMethod> requestMethodList = new ArrayList<>();
+                    requestMethodList.addAll(Arrays.asList(methodRequestMapping.method()));
+                    if(null!=method.getAnnotation(CrossOrigin.class)||null!=method.getDeclaringClass().getAnnotation(CrossOrigin.class)){
+                        requestMethodList.add(RequestMethod.OPTIONS);
+                    }
+                    request.requestMethods = requestMethodList.toArray(new RequestMethod[0]);
                     request.method = method;
-                    request.antPatternUrl = mappingUrl.replaceAll("\\{\\w+\\}", "\\*");
+                    request.antPatternUrl = request.mappingUrl.replaceAll("\\{\\w+\\}", "\\*");
                     //将请求方法也作为key值
-                    if (requestMethods.length > 0) {
+                    String requestMappingUrl = request.mappingUrl;
+                    if (request.requestMethods.length > 0) {
                         for (RequestMethod requestMethod : request.requestMethods) {
-                            mappingUrl += requestMethod.name() + "_";
+                            requestMappingUrl += requestMethod.name() + "_";
                         }
                     }
-                    controllerMeta.requestMappingHandler.put(mappingUrl, request);
+                    controllerMeta.requestMappingHandler.put(requestMappingUrl, request);
+                    if (request.requestMethods.length == 0) {
+                        logger.info("[映射路径][{}] onto {}", request.mappingUrl, method.toString());
+                    } else {
+                        logger.info("[映射路径][{},method={}] onto {}", request.mappingUrl, request.requestMethods, method.toString());
+                    }
                 }
             }
         }

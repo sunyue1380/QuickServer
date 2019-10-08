@@ -194,8 +194,8 @@ public class CommonHandler {
             return;
         }
         //检查请求方法
-        if (crossOrigin.methods().length > 0 && requestMeta.headers.containsKey("access-control-request-method")) {
-            String requestMethod = requestMeta.headers.get("access-control-request-method");
+        if (crossOrigin.methods().length > 0 && null!=requestMeta.accessControlRequestMethod) {
+            String requestMethod = requestMeta.accessControlRequestMethod;
             boolean allowMethod = false;
             for (String method : crossOrigin.methods()) {
                 if (requestMethod.equalsIgnoreCase(method)) {
@@ -208,12 +208,12 @@ public class CommonHandler {
             }
         }
         //检查请求头部
-        if (crossOrigin.headers().length > 0 && requestMeta.headers.containsKey("access-control-request-headers")) {
-            String[] requestHeaders = requestMeta.headers.get("access-control-request-headers").split(",");
+        if (crossOrigin.headers().length > 0 && null!=requestMeta.accessControlRequestHeaders) {
+            String[] requestHeaders = requestMeta.accessControlRequestHeaders.split(",");
             for (String allowHeader : crossOrigin.headers()) {
                 boolean exist = false;
                 for (String requestHeader : requestHeaders) {
-                    if (requestHeader.equals(allowHeader)) {
+                    if (allowHeader.equals("*")||requestHeader.equals(allowHeader)) {
                         exist = true;
                         break;
                     }
@@ -240,7 +240,7 @@ public class CommonHandler {
                 stringBuffer.deleteCharAt(stringBuffer.length() - 1);
                 crossOriginMap.put("Access-Control-Allow-Methods", stringBuffer.toString());
             } else {
-                crossOriginMap.put("Access-Control-Allow-Methods", requestMeta.headers.get("access-control-request-method"));
+                crossOriginMap.put("Access-Control-Allow-Methods", requestMeta.accessControlRequestMethod);
             }
             if (crossOrigin.headers().length > 0) {
                 StringBuffer stringBuffer = new StringBuffer();
@@ -250,7 +250,7 @@ public class CommonHandler {
                 stringBuffer.deleteCharAt(stringBuffer.length() - 1);
                 crossOriginMap.put("Access-Control-Allow-Headers", stringBuffer.toString());
             } else {
-                crossOriginMap.put("Access-Control-Allow-Headers", requestMeta.headers.get("access-control-request-headers"));
+                crossOriginMap.put("Access-Control-Allow-Headers", requestMeta.accessControlRequestHeaders);
             }
             if (crossOrigin.exposedHeaders().length > 0) {
                 StringBuffer stringBuffer = new StringBuffer();

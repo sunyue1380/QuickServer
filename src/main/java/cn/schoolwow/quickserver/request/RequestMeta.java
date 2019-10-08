@@ -77,6 +77,10 @@ public class RequestMeta {
      * origin头部
      */
     public String origin;
+    /**跨域允许方法*/
+    public String accessControlRequestMethod;
+    /**跨域允许头部*/
+    public String accessControlRequestHeaders;
     /**
      * http头部
      */
@@ -89,6 +93,10 @@ public class RequestMeta {
      * 允许的压缩格式
      */
     public String acceptEncoding;
+    /**
+     * 传输格式
+     */
+    public String transformEncoding;
     /**
      * 原始输入流
      */

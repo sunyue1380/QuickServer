@@ -68,7 +68,7 @@ public class ResponseHandler {
      */
     private static byte[] handleAcceptEncoding(RequestMeta requestMeta, ResponseMeta responseMeta) throws IOException {
         //文本类资源才需要压缩
-        if (QuickServerConfig.compressSupports == null || !responseMeta.contentType.startsWith("text/") || requestMeta.headers.containsKey("accept-encoding")) {
+        if (QuickServerConfig.compressSupports == null || !responseMeta.contentType.startsWith("text/") || null!=requestMeta.acceptEncoding) {
             return null;
         }
         if (requestMeta.acceptEncoding == null || requestMeta.acceptEncoding.isEmpty()) {
