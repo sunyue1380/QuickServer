@@ -101,6 +101,9 @@ public class QuickServer {
                     }
 
                     SessionMeta sessionMeta = SessionHandler.handleRequest(requestMeta, responseMeta);
+                    if(requestMeta.requestURI.equals("/")){
+                        requestMeta.requestURI = "/index.html";
+                    }
                     CommonHandler.handleRequest(requestMeta, responseMeta, sessionMeta, controllerMeta);
                     CommonHandler.handleResponse(requestMeta, responseMeta, sessionMeta, controllerMeta);
                     ResponseHandler.handleResponse(requestMeta, responseMeta);

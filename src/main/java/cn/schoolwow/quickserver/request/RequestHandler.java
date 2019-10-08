@@ -321,7 +321,11 @@ public class RequestHandler {
                 requestMeta.parameters.put(token, "");
             } else {
                 String[] _tokens = token.split("=");
-                requestMeta.parameters.put(_tokens[0], _tokens[1]);
+                if(_tokens.length<2){
+                    requestMeta.parameters.put(_tokens[0], "");
+                }else{
+                    requestMeta.parameters.put(_tokens[0], _tokens[1]);
+                }
             }
         }
     }
