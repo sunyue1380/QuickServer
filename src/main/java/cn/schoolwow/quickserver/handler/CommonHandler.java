@@ -36,14 +36,6 @@ public class CommonHandler {
      * 处理请求
      */
     public static void handleRequest(RequestMeta requestMeta, ResponseMeta responseMeta, SessionMeta sessionMeta, ControllerMeta controllerMeta) throws Exception {
-        //TODO 初始化过滤器
-//        {
-//            for(Filter filter:controllerMeta.filterList){
-//                if(AntPatternUtil.matchFilter(requestMeta.requestURI,filter)){
-//                    filter.handlerInterceptor = controllerMeta.getInterceptor(filter.handlerInterceptorClass);
-//                }
-//            }
-//        }
         //TODO 按照匹配模式长度进行顺序执行
         for (Filter filter : controllerMeta.filterList) {
             if (AntPatternUtil.matchFilter(requestMeta.requestURI, filter)) {
@@ -123,6 +115,7 @@ public class CommonHandler {
         }
         //处理重定向
         if (null != responseMeta.forward) {
+            logger.trace("[处理重定向]重定向地址:{}",responseMeta.forward);
             requestMeta.requestURI = responseMeta.forward;
             requestMeta.invokeMethod = null;
             handleRequest(requestMeta, responseMeta, sessionMeta, controllerMeta);
@@ -151,6 +144,7 @@ public class CommonHandler {
             basicAuth = requestMeta.invokeMethod.getDeclaringClass().getAnnotation(BasicAuth.class);
         }
         if (null != basicAuth) {
+            logger.trace("[BasicAuth]地址:{},用户名:{},密码:{}",requestMeta.requestURI,basicAuth.username(),basicAuth.password());
             if (requestMeta.authorization == null) {
                 responseMeta.response(ResponseMeta.HttpStatus.UNAUTHORIZED, requestMeta);
                 responseMeta.headers.put("WWW-Authenticate", "Basic realm=\"" + basicAuth.realm() + "\"");

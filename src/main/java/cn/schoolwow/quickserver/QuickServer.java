@@ -23,7 +23,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class QuickServer {
-    Logger logger = LoggerFactory.getLogger(QuickServer.class);
+    private static Logger logger = LoggerFactory.getLogger(QuickServer.class);
     private int port = 10000;
     private String indexPage = "/index.html";
     private ControllerMeta controllerMeta = new ControllerMeta();
@@ -95,11 +95,9 @@ public class QuickServer {
                 try {
                     requestMeta.inputStream = new BufferedInputStream(socket.getInputStream());
                     responseMeta.outputStream = new BufferedOutputStream(socket.getOutputStream());
-                    RequestHandler.parseRequest(requestMeta);
-                    if (null == requestMeta.method) {
+                    if(!RequestHandler.parseRequest(requestMeta)||null==requestMeta.method){
                         return;
                     }
-
                     SessionMeta sessionMeta = SessionHandler.handleRequest(requestMeta, responseMeta);
                     if(requestMeta.requestURI.equals("/")){
                         requestMeta.requestURI = "/index.html";
@@ -124,7 +122,7 @@ public class QuickServer {
         }
     }
 
-    private void assureInitial() throws IOException {
+    private void assureInitial() {
         if (null != QuickServerConfig.realPath) {
             return;
         }
@@ -134,9 +132,9 @@ public class QuickServer {
         controllerMeta.component.refresh();
         ControllerHandler.handle(controllerMeta);
         //获取真实路径
-        String path = this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
+        String path = this.getClass().getResource("/").getPath();
         if (System.getProperty("os.name").contains("dows")) {
-            path = path.substring(1, path.length());
+            path = path.substring(1);
         }
         if (path.contains("jar")) {
             path = path.substring(0, path.lastIndexOf("."));
@@ -144,5 +142,6 @@ public class QuickServer {
         } else {
             QuickServerConfig.realPath = path.replace("target/classes/", "");
         }
+        logger.info("[项目路径]项目真实路径:{}",QuickServerConfig.realPath);
     }
 }

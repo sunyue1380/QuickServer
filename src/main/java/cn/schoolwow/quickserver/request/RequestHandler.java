@@ -5,10 +5,10 @@ import cn.schoolwow.quickserver.util.RegExpUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,8 +19,9 @@ public class RequestHandler {
 
     /**
      * 解析Http请求
+     * @return 是否成功解析Http请求报文
      */
-    public static void parseRequest(RequestMeta requestMeta) throws IOException {
+    public static boolean parseRequest(RequestMeta requestMeta) throws IOException {
         logger.trace("[开始解析Http请求]");
         //读取头部信息
         {
@@ -44,14 +45,15 @@ public class RequestHandler {
             }
             logger.trace("[读取头部信息]头部字段\n{}", httpHeaderBuffer.toString());
             if (httpHeaderBuffer.toString().trim().isEmpty()) {
-                throw new IOException("头部信息读取为空!");
+                return false;
             }
             String[] headerLines = httpHeaderBuffer.toString().split("\r\n");
             //处理请求行
             {
                 String firstLine = headerLines[0];
                 if (!firstLine.contains(" ")) {
-                    throw new IOException("读取请求行失败!当前请求行:" + firstLine);
+                    logger.trace("[请求行解析失败]请求行:{}",firstLine);
+                    return false;
                 }
                 requestMeta.method = firstLine.substring(0, firstLine.indexOf(" ")).toUpperCase();
                 firstLine = firstLine.substring(firstLine.indexOf(" ") + 1);
@@ -150,6 +152,7 @@ public class RequestHandler {
             }
         }
         logger.debug("[请求行]{}", requestMeta.method + " " + requestMeta.requestURI);
+        return true;
     }
 
     /**
@@ -187,7 +190,7 @@ public class RequestHandler {
      */
     private static void handleMultipartFormData(RequestMeta requestMeta) throws IOException {
         logger.trace("[boundary]boundary:{}", requestMeta.boundary);
-        byte[] splitBoundary = ("--" + requestMeta.boundary).getBytes();
+        byte[] splitBoundary = ("\r\n--" + requestMeta.boundary).getBytes();
         int b;
         //读取第一行
         IOUtil.readLine(requestMeta);
@@ -196,10 +199,15 @@ public class RequestHandler {
             //Content-Disposition
             {
                 String contentDisposition = IOUtil.readLine(requestMeta);
-                multipartFile.name = RegExpUtil.extract(contentDisposition, "name=\"(?<name>\\w+)\"", "name");
-                ;
+                multipartFile.name = RegExpUtil.plainMatch(contentDisposition, "name=\"()\"");
+                if(null==multipartFile.name){
+                    multipartFile.name = RegExpUtil.plainMatch(contentDisposition, "name=();");
+                }
+                if(null==multipartFile.name||multipartFile.name.isEmpty()){
+                    logger.trace("[文件字段读取失败]当前行:{}",contentDisposition);
+                }
                 if (contentDisposition.contains("filename=")) {
-                    multipartFile.originalFilename = RegExpUtil.extract(contentDisposition, "filename=\"(?<filename>.*)\"$", "filename");
+                    multipartFile.originalFilename = RegExpUtil.plainMatch(contentDisposition, "filename=\"()\"");
                 }
             }
             //额外行
@@ -224,40 +232,22 @@ public class RequestHandler {
             //Body部分
             {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                while ((b = requestMeta.inputStream.read()) != -1) {
-                    if (b == CR) {
-                        //判断下一个字符是否是回车
-                        b = requestMeta.inputStream.read();
-                        if (b != LF) {
-                            baos.write(CR);
-                            baos.write(b);
-                            continue;
-                        }
-                        //判断是否是分隔符
-                        byte[] bytes = new byte[splitBoundary.length];
-                        requestMeta.inputStream.read(bytes);
-                        boolean isBoundaryEnd = true;
-                        for (int i = 0; i < bytes.length; i++) {
-                            if (bytes[i] != splitBoundary[i]) {
-                                isBoundaryEnd = false;
-                                break;
-                            }
-                        }
-                        if (isBoundaryEnd) {
-                            break;
-                        } else {
-                            baos.write(CR);
-                            baos.write(LF);
-                            baos.write(bytes);
-                            continue;
-                        }
-                    }
-                    baos.write(b);
+                byte[] bytes = new byte[splitBoundary.length];
+                requestMeta.inputStream.mark(splitBoundary.length+1);
+                requestMeta.inputStream.read(bytes);
+                while(requestMeta.inputStream.available()>0&&!Arrays.equals(bytes,splitBoundary)){
+                    baos.write(bytes[0]);
+                    requestMeta.inputStream.reset();
+                    requestMeta.inputStream.read();
+                    requestMeta.inputStream.mark(splitBoundary.length+1);
+                    requestMeta.inputStream.read(bytes);
                 }
                 baos.flush();
                 multipartFile.bytes = baos.toByteArray();
                 if (multipartFile.originalFilename == null) {
-                    requestMeta.parameters.put(multipartFile.name, new String(multipartFile.bytes, requestMeta.charset));
+                    String value = new String(multipartFile.bytes, requestMeta.charset);
+                    requestMeta.parameters.put(multipartFile.name, value);
+                    logger.trace("[添加字符串参数]字段名:{},字段值:{}",multipartFile.name,value);
                 } else {
                     multipartFile.inputStream = new ByteArrayInputStream(multipartFile.bytes);
                     multipartFile.size = multipartFile.bytes.length;
@@ -272,7 +262,10 @@ public class RequestHandler {
                 byte[] bytes = new byte[2];
                 requestMeta.inputStream.read(bytes);
                 if (bytes[0] == 45 && bytes[1] == 45) {
+                    //如果是 -- ,则表示文件部分读取完毕
                     break;
+                }else{
+                    //按理来说应该是读取了换行
                 }
             }
         }

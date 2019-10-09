@@ -53,14 +53,18 @@ public class ResponseHandler {
             result.append("\r\n");
         }
         result.append("\r\n");
+        logger.trace("[返回头部]返回头部信息:\n{}",result.toString());
         responseMeta.outputStream.write(result.toString().getBytes());
 
-        if (body == null) {
+        if (null==body) {
+            //不压缩
             writeBody(responseMeta, responseMeta.outputStream);
         } else {
+            //压缩
             responseMeta.outputStream.write(body);
         }
         responseMeta.outputStream.flush();
+        logger.trace("[返回主体]返回主体内容写入完毕!");
     }
 
     /**
@@ -97,10 +101,9 @@ public class ResponseHandler {
      * 写入主体内容
      */
     private static void writeBody(ResponseMeta responseMeta, OutputStream outputStream) throws IOException {
-        if (responseMeta.body != null) {
+        if (null!=responseMeta.body) {
             outputStream.write(responseMeta.body.getBytes(responseMeta.charset));
-        }
-        if (responseMeta.staticURL != null) {
+        }else if(null!=responseMeta.staticURL) {
             InputStream inputStream = responseMeta.inputStream;
             int length = -1;
             byte[] bytes = new byte[8192];
