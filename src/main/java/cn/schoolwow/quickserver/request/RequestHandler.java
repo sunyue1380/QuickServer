@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -307,7 +308,7 @@ public class RequestHandler {
     /**
      * 处理表单参数
      */
-    private static void handleFormParameter(String parameter, RequestMeta requestMeta) {
+    private static void handleFormParameter(String parameter, RequestMeta requestMeta) throws UnsupportedEncodingException {
         String[] tokens = parameter.split("&");
         for (String token : tokens) {
             if (!token.contains("=")) {
@@ -317,7 +318,7 @@ public class RequestHandler {
                 if(_tokens.length<2){
                     requestMeta.parameters.put(_tokens[0], "");
                 }else{
-                    requestMeta.parameters.put(_tokens[0], _tokens[1]);
+                    requestMeta.parameters.put(_tokens[0], URLDecoder.decode(_tokens[1],requestMeta.charset));
                 }
             }
         }
