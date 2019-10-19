@@ -9,13 +9,12 @@ import cn.schoolwow.quickserver.response.ResponseMeta;
 import cn.schoolwow.quickserver.session.SessionMeta;
 import cn.schoolwow.quickserver.util.AntPatternUtil;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,6 +24,11 @@ public class InvokeMethodHandler {
     private static Logger logger = LoggerFactory.getLogger(InvokeMethodHandler.class);
 
     private static SimpleDateFormat sdf = new SimpleDateFormat();
+
+    /**
+     * 基本数据类型数组类型
+     */
+    private static Class[] basicDataTypeClassList = new Class[]{boolean[].class, byte[].class, char[].class, short[].class, int[].class, long[].class, float[].class, double[].class};
 
     /**
      * 获取InvokeMethod
@@ -196,7 +200,7 @@ public class InvokeMethodHandler {
                 }
                 break;
                 case JSON: {
-                    result = JSON.toJSONString(result);
+                    result = JSON.toJSONString(result, SerializerFeature.WriteMapNullValue);
                     responseMeta.contentType = "application/json";
                 }
             }
@@ -233,10 +237,13 @@ public class InvokeMethodHandler {
         return true;
     }
 
-    private static boolean handleRequestBody(Parameter parameter, List<Object> parameterList, RequestMeta requestMeta) throws BusinessException {
+    private static boolean handleRequestBody(Parameter parameter, List<Object> parameterList, RequestMeta requestMeta) throws ClassNotFoundException {
         RequestBody requestBody = parameter.getAnnotation(RequestBody.class);
         if (null == requestBody) {
             return false;
+        }
+        if(null==requestMeta.body&&requestBody.required()){
+            throw new IllegalArgumentException("RequestBody提取失败!参数:"+parameter.getName()+",调用方法:"+requestMeta.invokeMethod.toString());
         }
         String parameterType = parameter.getType().getName();
         if ("java.lang.String".equals(parameterType)) {
@@ -248,15 +255,18 @@ public class InvokeMethodHandler {
         } else if ("java.io.InputStream".equals(parameterType)) {
             parameterList.add(requestMeta.inputStream);
         } else if ("java.util.List".equals(parameterType)) {
-            Type type = parameter.getType().getGenericSuperclass();
+            Type type = parameter.getParameterizedType();
             ParameterizedType pt = (ParameterizedType) type;
             Type[] actualTypes = pt.getActualTypeArguments();
-            try {
-                parameterList.add(JSON.parseArray(requestMeta.body).toJavaList(Class.forName(actualTypes[0].getTypeName())));
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-                return false;
+            parameterList.add(JSON.parseArray(requestMeta.body).toJavaList(Class.forName(actualTypes[0].getTypeName())));
+        } else if (parameterType.startsWith("[")) {
+            Class clazz = getArrayClass(parameterType);
+            JSONArray bodyArray = JSON.parseArray(requestMeta.body);
+            Object array = Array.newInstance(clazz.getComponentType(),bodyArray.size());
+            for(int i=0;i<bodyArray.size();i++){
+                Array.set(array,i,bodyArray.get(i));
             }
+            parameterList.add(array);
         } else {
             parameterList.add(JSON.parseObject(requestMeta.body).toJavaObject(parameter.getType()));
         }
@@ -369,5 +379,21 @@ public class InvokeMethodHandler {
             e.printStackTrace();
             return null;
         }
+    }
+
+    /**
+     * 获取数组类型
+     */
+    public static Class getArrayClass(String parameterType) throws ClassNotFoundException {
+        if (parameterType.startsWith("[L")) {
+            String className = parameterType.substring(2, parameterType.length() - 1);
+            return Class.forName(className);
+        }
+        for (Class _class : basicDataTypeClassList) {
+            if (parameterType.equals(_class.getName())) {
+                return _class;
+            }
+        }
+        throw new IllegalArgumentException("不支持的数组参数类型!类型:" + parameterType);
     }
 }

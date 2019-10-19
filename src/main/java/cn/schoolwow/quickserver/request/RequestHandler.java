@@ -152,7 +152,7 @@ public class RequestHandler {
                 }
             }
         }
-        logger.debug("[请求行]{}", requestMeta.method + " " + requestMeta.requestURI);
+        logger.trace("[请求行]{}", requestMeta.method + " " + requestMeta.requestURI);
         return true;
     }
 
@@ -183,7 +183,7 @@ public class RequestHandler {
         byte[] bytes = baos.toByteArray();
         baos.close();
         requestMeta.inputStream = new BufferedInputStream(new ByteArrayInputStream(bytes));
-        logger.debug("[处理分块传输]总大小:{}", bytes.length);
+        logger.trace("[处理分块传输]总大小:{}", bytes.length);
     }
 
     /**

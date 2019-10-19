@@ -48,20 +48,20 @@ public class CommonHandler {
         {
             handleStaticFile(requestMeta, responseMeta, controllerMeta);
             if (null != responseMeta.staticURL) {
-                logger.debug("[静态资源]资源地址:{}", responseMeta.staticURL);
+                logger.trace("[静态资源]资源地址:{}", responseMeta.staticURL);
                 return;
             }
         }
         //初始化Method
         {
             InvokeMethodHandler.getInvokeMethod(requestMeta, controllerMeta);
-            logger.debug("[获取调用方法]{}", requestMeta.invokeMethod);
+            logger.trace("[获取调用方法]{}", requestMeta.invokeMethod);
         }
         //判断请求路径
         {
             if (requestMeta.invokeMethod == null) {
                 responseMeta.response(ResponseMeta.HttpStatus.NOT_FOUND, requestMeta);
-                logger.debug("[请求路径不存在]路径:{},无对应处理方法.", requestMeta.requestURI);
+                logger.trace("[请求路径不存在]路径:{},无对应处理方法.", requestMeta.requestURI);
                 return;
             }
         }
@@ -85,7 +85,7 @@ public class CommonHandler {
         //方法调用
         Object result = null;
         {
-            logger.debug("[调用方法]请求路径:[{}],调用方法:{}", requestMeta.method + " " + requestMeta.requestURI, requestMeta.invokeMethod.toString());
+            logger.trace("[调用方法]请求路径:[{}],调用方法:{}", requestMeta.method + " " + requestMeta.requestURI, requestMeta.invokeMethod.toString());
             result = InvokeMethodHandler.handleInvokeMethod(requestMeta, responseMeta, sessionMeta, controllerMeta);
             if (responseMeta.status == 0) {
                 responseMeta.response(ResponseMeta.HttpStatus.OK, requestMeta);
@@ -297,6 +297,6 @@ public class CommonHandler {
         responseMeta.response(ResponseMeta.HttpStatus.OK, requestMeta);
         responseMeta.contentType = MIMEUtil.getMIMEType(requestMeta.requestURI);
         responseMeta.contentLength = responseMeta.inputStream.available();
-        logger.debug("[访问静态资源]请求路径:{},资源路径:{}", requestMeta.requestURI, responseMeta.staticURL.toString());
+        logger.trace("[访问静态资源]请求路径:{},资源路径:{}", requestMeta.requestURI, responseMeta.staticURL.toString());
     }
 }

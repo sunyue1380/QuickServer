@@ -31,7 +31,7 @@ public class SessionHandler {
             sessionId = sessionMeta.id;
             sessionMap.put(sessionMeta.id, sessionMeta);
             responseMeta.cookies.add(new HttpCookie(QuickServerConfig.SESSION, sessionMeta.id));
-            logger.debug("[创建会话]会话id:{}", sessionId);
+            logger.trace("[创建会话]会话id:{}", sessionId);
         }
         SessionMeta sessionMeta = sessionMap.get(sessionId);
         sessionMeta.lastAccessedTime = new Date();
@@ -42,7 +42,7 @@ public class SessionHandler {
      * 注销会话
      */
     public static void invalidate(String sessionId) {
-        logger.debug("[销毁会话]会话id:{}", sessionId);
+        logger.trace("[销毁会话]会话id:{}", sessionId);
         sessionMap.remove(sessionId);
     }
 }

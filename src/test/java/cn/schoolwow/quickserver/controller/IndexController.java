@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Resource;
 import java.io.File;
 import java.util.Date;
+import java.util.List;
 
 @Component
 @ResponseBody
@@ -145,6 +146,22 @@ public class IndexController {
             User user
     ){
         logger.info("[显示用户]user:{}",user);
+        return true;
+    }
+
+    @RequestMapping(value = "/getUserList",method = {RequestMethod.POST})
+    public boolean getUserList(
+            @RequestBody List<User> userList
+    ){
+        logger.info("[显示用户列表]user:{}",userList);
+        return true;
+    }
+
+    @RequestMapping(value = "/parseArray",method = {RequestMethod.POST})
+    public boolean getUserList(
+            @RequestBody int[] users
+    ){
+        logger.info("[解析数组]users:{}",users);
         return true;
     }
 }
