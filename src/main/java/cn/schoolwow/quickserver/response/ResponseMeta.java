@@ -151,6 +151,21 @@ public class ResponseMeta {
         this.forward = url;
     }
 
+    public void setStatus(int status){
+        HttpStatus[] httpStatuses = HttpStatus.values();
+        for(HttpStatus httpStatus:httpStatuses){
+            if(httpStatus.status==status){
+                setStatus(httpStatus);
+                return;
+            }
+        }
+    }
+
+    public void setStatus(HttpStatus httpStatus){
+        this.status = httpStatus.status;
+        this.statusMessage = httpStatus.statusMessage;
+    }
+
     public void response(HttpStatus httpStatus, RequestMeta requestMeta) {
         this.status = httpStatus.status;
         this.statusMessage = httpStatus.statusMessage;
