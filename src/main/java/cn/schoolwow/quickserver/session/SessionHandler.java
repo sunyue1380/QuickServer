@@ -8,15 +8,44 @@ import org.slf4j.LoggerFactory;
 
 import java.net.HttpCookie;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 
 public class SessionHandler {
     private static Logger logger = LoggerFactory.getLogger(SessionHandler.class);
     /**
+     * 默认会话过期时间(秒)
+     * */
+    private volatile static int maxInactiveInterval = 3600;
+    /**
      * 会话存储
      */
     private static ConcurrentHashMap<String, SessionMeta> sessionMap = new ConcurrentHashMap();
+    /**
+     * 定时任务线程池
+     * */
+    private static ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+    static{
+        //每隔10分钟检查一次
+        scheduledExecutorService.scheduleWithFixedDelay(()->{
+            Iterator<Map.Entry<String,SessionMeta>> iterable = sessionMap.entrySet().iterator();
+            while(iterable.hasNext()){
+                Map.Entry<String,SessionMeta> entry = iterable.next();
+                if((System.currentTimeMillis()-entry.getValue().lastAccessedTime.getTime())/1000>=maxInactiveInterval){
+                    iterable.remove();
+                }
+            }
+        },60,600, TimeUnit.SECONDS);
+    }
+    /**
+     * 设置默认会话过期时间
+     * @param seconds 最大会话秒数
+     * */
+    public static void setMaxInactiveInterval(int seconds){
+        maxInactiveInterval = seconds;
+    }
 
     /**
      * 根据RequestMeta获取SessionMeta对象

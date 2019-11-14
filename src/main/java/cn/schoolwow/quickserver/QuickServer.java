@@ -132,7 +132,10 @@ public class QuickServer {
         controllerMeta.component.refresh();
         ControllerHandler.handle(controllerMeta);
         //获取真实路径
-        String path = this.getClass().getResource("/").getPath();
+        String path = this.getClass().getResource("").getPath();
+        if(path.startsWith("file:")){
+            path = path.substring("file:".length());
+        }
         if (System.getProperty("os.name").contains("dows")) {
             path = path.substring(1);
         }

@@ -25,6 +25,14 @@ public class SessionMeta {
     public Date lastAccessedTime;
 
     /**
+     * 设置会话过期时间
+     * @param seconds 会话过期时间(秒)
+     */
+    public void setMaxInactiveInterval(int seconds) {
+        SessionHandler.setMaxInactiveInterval(seconds);
+    }
+
+    /**
      * 注销会话
      */
     public void invalidate() {

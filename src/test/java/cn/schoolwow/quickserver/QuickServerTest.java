@@ -21,11 +21,11 @@ public class QuickServerTest {
 
     @BeforeClass
     public static void beforeClass() throws IOException {
-        QuickHttp.proxy("127.0.0.1",8888);
+//        QuickHttp.proxy("127.0.0.1",8888);
         QuickServer.newInstance()
                 .scan("cn.schoolwow.quickserver.controller")
                 .scan("cn.schoolwow.quickserver.service")
-                .start();
+                .asyncStart();
     }
 
     @Test
@@ -62,7 +62,6 @@ public class QuickServerTest {
                 .data("username","aaaa")
                 .data("password","bbbb")
                 .execute();
-        logger.debug("[body]{}",response.body());
         Assert.assertEquals("true",response.body());
     }
 
@@ -141,6 +140,29 @@ public class QuickServerTest {
                 .data("username","sunyue")
                 .data("password","123456")
                 .execute();
+        Assert.assertEquals("true",response.body());
+    }
+
+    @Test
+    public void getUserList() throws IOException {
+        User[] users = new User[]{
+                new User("quickserver1","123456"),
+                new User("quickserver2","123456"),
+        };
+        Response response = QuickHttp.connect(host+"/getUserList")
+                .method(Connection.Method.POST)
+                .requestBody(JSON.toJSONString(users))
+                .execute();
+        Assert.assertEquals("true",response.body());
+    }
+
+    @Test
+    public void getUserList2() throws IOException {
+        Response response = QuickHttp.connect(host+"/parseArray")
+                .method(Connection.Method.POST)
+                .requestBody(JSON.toJSONString(new int[]{1,2}))
+                .execute();
+        Integer a = 1;
         Assert.assertEquals("true",response.body());
     }
 }

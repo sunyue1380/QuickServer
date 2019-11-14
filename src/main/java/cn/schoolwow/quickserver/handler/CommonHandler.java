@@ -93,7 +93,7 @@ public class CommonHandler {
             if (responseMeta.contentType == null) {
                 responseMeta.contentType = "text/plain;";
             }
-            if (result != null) {
+            if (null!=result) {
                 if (responseMeta.body == null) {
                     responseMeta.body = result.toString();
                 } else {
@@ -120,7 +120,7 @@ public class CommonHandler {
             requestMeta.invokeMethod = null;
             handleRequest(requestMeta, responseMeta, sessionMeta, controllerMeta);
         }
-        if (responseMeta.body != null) {
+        if(null!=responseMeta.body){
             responseMeta.contentLength = responseMeta.body.getBytes().length;
         }
         responseMeta.headers.put("Content-Type", responseMeta.contentType + "; charset=" + responseMeta.charset);

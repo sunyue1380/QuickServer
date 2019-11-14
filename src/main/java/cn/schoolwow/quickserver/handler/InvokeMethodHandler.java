@@ -189,16 +189,19 @@ public class InvokeMethodHandler {
         }
         //处理ResponseBody注解
         ResponseBody responseBody = controller.getClass().getDeclaredAnnotation(ResponseBody.class);
-        if (responseBody == null) {
+        if (null==responseBody) {
             responseBody = requestMeta.invokeMethod.getAnnotation(ResponseBody.class);
         }
-        if (responseBody == null) {
-            responseMeta.forward(result.toString());
+        if (null==responseBody) {
+            if(result.toString().startsWith("redirect:")){
+                responseMeta.redirect(result.toString().substring("redirect:".length()));
+            }else{
+                responseMeta.forward(result.toString());
+            }
+            result = null;
         } else {
             switch (responseBody.value()) {
-                case String: {
-                }
-                break;
+                case String: {}break;
                 case JSON: {
                     result = JSON.toJSONString(result, SerializerFeature.WriteMapNullValue);
                     responseMeta.contentType = "application/json";
