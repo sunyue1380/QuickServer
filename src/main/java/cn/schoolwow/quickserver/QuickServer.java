@@ -132,7 +132,7 @@ public class QuickServer {
         controllerMeta.component.refresh();
         ControllerHandler.handle(controllerMeta);
         //获取真实路径
-        String path = this.getClass().getResource("").getPath();
+        String path = ClassLoader.getSystemResource("").getPath();
         if(path.startsWith("file:")){
             path = path.substring("file:".length());
         }
