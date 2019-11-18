@@ -15,9 +15,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -131,20 +134,35 @@ public class QuickServer {
         }
         controllerMeta.component.refresh();
         ControllerHandler.handle(controllerMeta);
+
+
         //获取真实路径
-        String path = ClassLoader.getSystemResource("").getPath();
-        if(path.startsWith("file:")){
-            path = path.substring("file:".length());
+        URL url = Thread.currentThread().getContextClassLoader().getResource("");
+        if(null==url){
+            try {
+                url = new File("").toURL();
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
         }
-        if (System.getProperty("os.name").contains("dows")) {
-            path = path.substring(1);
+        if(null!=url){
+            String path = url.getPath();
+            if(path.startsWith("file:")){
+                path = path.substring("file:".length());
+            }
+            if (System.getProperty("os.name").contains("dows")) {
+                path = path.substring(1);
+            }
+            if (path.contains("jar")) {
+                path = path.substring(0, path.lastIndexOf("."));
+                path = path.substring(0, path.lastIndexOf("/"));
+            } else {
+                path = path.replace("target/classes/", "");
+            }
+            QuickServerConfig.realPath = path;
+            logger.info("[项目根目录]{}",path);
+        }else{
+            logger.warn("[根目录获取为空]");
         }
-        if (path.contains("jar")) {
-            path = path.substring(0, path.lastIndexOf("."));
-            QuickServerConfig.realPath = path.substring(0, path.lastIndexOf("/"));
-        } else {
-            QuickServerConfig.realPath = path.replace("target/classes/", "");
-        }
-        logger.info("[项目路径]项目真实路径:{}",QuickServerConfig.realPath);
     }
 }

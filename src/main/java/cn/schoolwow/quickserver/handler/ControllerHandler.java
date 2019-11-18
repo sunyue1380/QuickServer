@@ -23,7 +23,6 @@ public class ControllerHandler {
      * 扫描拦截器和控制器类
      */
     public static void handle(ControllerMeta controllerMeta) {
-        controllerMeta.component.refresh();
         for (Class c : controllerMeta.component.getBeanClassList()) {
             //注册拦截器
             {
