@@ -137,7 +137,7 @@ public class QuickServer {
 
 
         //获取真实路径
-        URL url = Thread.currentThread().getContextClassLoader().getResource("");
+        URL url = QuickServer.class.getProtectionDomain().getCodeSource().getLocation();
         if(null==url){
             try {
                 url = new File("").toURL();
