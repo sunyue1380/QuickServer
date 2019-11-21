@@ -27,12 +27,15 @@ import java.util.concurrent.TimeUnit;
 
 public class QuickServer {
     private static Logger logger = LoggerFactory.getLogger(QuickServer.class);
+    private static String mainClassName;
     private int port = 10000;
     private String indexPage = "/index.html";
     private ControllerMeta controllerMeta = new ControllerMeta();
     private ThreadPoolExecutor threadPoolExecutor;
 
     public static QuickServer newInstance() {
+        StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+        mainClassName = stackTraceElements[2].getClassName();
         return new QuickServer();
     }
 
@@ -132,19 +135,24 @@ public class QuickServer {
         if (threadPoolExecutor == null) {
             threadPoolExecutor = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), 200, 1, TimeUnit.MINUTES, new LinkedBlockingQueue<>());
         }
+        getRealPath();
         controllerMeta.component.refresh();
         ControllerHandler.handle(controllerMeta);
-
-
+    }
+    private void getRealPath(){
         //获取真实路径
-        URL url = QuickServer.class.getProtectionDomain().getCodeSource().getLocation();
-        if(null==url){
-            try {
-                url = new File("").toURL();
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
+        URL url = null;
+        try {
+            url = Class.forName(mainClassName).getResource("");
+            if("jar".equals(url.getProtocol())){
+                url = QuickServer.class.getProtectionDomain().getCodeSource().getLocation();
+            }else if("file".equals(url.getProtocol())) {
+                url = Thread.currentThread().getContextClassLoader().getResource("");
             }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
+
         if(null!=url){
             String path = url.getPath();
             if(path.startsWith("file:")){
@@ -156,8 +164,6 @@ public class QuickServer {
             if (path.contains("jar")) {
                 path = path.substring(0, path.lastIndexOf("."));
                 path = path.substring(0, path.lastIndexOf("/"));
-            } else {
-                path = path.replace("target/classes/", "");
             }
             QuickServerConfig.realPath = path;
             logger.info("[项目根目录]{}",path);

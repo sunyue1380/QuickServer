@@ -209,6 +209,9 @@ public class RequestHandler {
                 }
                 if (contentDisposition.contains("filename=")) {
                     multipartFile.originalFilename = RegExpUtil.plainMatch(contentDisposition, "filename=\"()\"");
+                    if(multipartFile.originalFilename.contains(".")){
+                        multipartFile.suffixFileName = multipartFile.originalFilename.substring(multipartFile.originalFilename.lastIndexOf(".")+1);
+                    }
                 }
             }
             //额外行

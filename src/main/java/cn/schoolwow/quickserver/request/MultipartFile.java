@@ -17,6 +17,11 @@ public class MultipartFile {
     public String originalFilename;
 
     /**
+     * 文件后缀名
+     */
+    public String suffixFileName;
+
+    /**
      * 类型
      */
     public String contentType;
