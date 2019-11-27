@@ -130,6 +130,7 @@ public class RequestHandler {
                 }
             }
         }
+        requestMeta.requestURI = URLDecoder.decode(requestMeta.requestURI,requestMeta.charset);
         //处理分块传输
         {
             handleTransferEncoding(requestMeta);
