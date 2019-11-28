@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,7 +49,7 @@ public class RequestMeta {
     /**
      * 文件参数列表
      */
-    public Map<String, MultipartFile> fileParameters = new HashMap<>();
+    public Map<String, List<MultipartFile>> fileParameters = new HashMap<>();
     /**
      * http头部
      */

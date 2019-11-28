@@ -232,11 +232,15 @@ public class InvokeMethodHandler {
         if (null == requestPart) {
             return false;
         }
-        MultipartFile multipartFile = requestMeta.fileParameters.get(requestPart.name());
-        if (requestPart.required() && multipartFile == null) {
+        List<MultipartFile> multipartFileList = requestMeta.fileParameters.get(requestPart.name());
+        if (requestPart.required() && (multipartFileList==null||multipartFileList.isEmpty())) {
             throw new BusinessException(ResponseMeta.HttpStatus.BAD_REQUEST, "请求参数[" + requestPart.name() + "]不能为空!");
         }
-        parameterList.add(multipartFile);
+        if(parameter.getType().isArray()){
+            parameterList.add(multipartFileList.toArray(new MultipartFile[0]));
+        }else{
+            parameterList.add(multipartFileList.get(0));
+        }
         return true;
     }
 

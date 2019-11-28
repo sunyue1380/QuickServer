@@ -7,11 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class RequestHandler {
     private static Logger logger = LoggerFactory.getLogger(RequestHandler.class);
@@ -257,7 +253,12 @@ public class RequestHandler {
                     multipartFile.inputStream = new ByteArrayInputStream(multipartFile.bytes);
                     multipartFile.size = multipartFile.bytes.length;
                     multipartFile.isEmpty = multipartFile.bytes.length == 0;
-                    requestMeta.fileParameters.put(multipartFile.name, multipartFile);
+                    List<MultipartFile> multipartFileList = requestMeta.fileParameters.get(multipartFile.name);
+                    if(null==multipartFileList){
+                        multipartFileList = new ArrayList<MultipartFile>();
+                    }
+                    multipartFileList.add(multipartFile);
+                    requestMeta.fileParameters.put(multipartFile.name,multipartFileList);
                     logger.trace("[添加文件参数]字段名:{},原始文件名:{},文件大小:{}", multipartFile.name, multipartFile.originalFilename, multipartFile.bytes.length);
                 }
                 baos.close();
