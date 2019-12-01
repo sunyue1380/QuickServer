@@ -269,9 +269,9 @@ public class InvokeMethodHandler {
         } else if (parameterType.startsWith("[")) {
             Class clazz = getArrayClass(parameterType);
             JSONArray bodyArray = JSON.parseArray(requestMeta.body);
-            Object array = Array.newInstance(clazz.getComponentType(),bodyArray.size());
+            Object array = Array.newInstance(clazz,bodyArray.size());
             for(int i=0;i<bodyArray.size();i++){
-                Array.set(array,i,bodyArray.get(i));
+                Array.set(array,i,bodyArray.getObject(i,clazz));
             }
             parameterList.add(array);
         } else {
@@ -398,7 +398,7 @@ public class InvokeMethodHandler {
         }
         for (Class _class : basicDataTypeClassList) {
             if (parameterType.equals(_class.getName())) {
-                return _class;
+                return _class.getComponentType();
             }
         }
         throw new IllegalArgumentException("不支持的数组参数类型!类型:" + parameterType);
