@@ -65,13 +65,6 @@ public class CommonHandler {
                 return;
             }
         }
-        //处理Basic Auth
-        {
-            if (!handleBasicAuth(requestMeta, responseMeta)) {
-                logger.warn("[BasicAuth]基本认证失败!");
-                return;
-            }
-        }
         //处理跨域请求
         {
             handleCrossOrigin(requestMeta, responseMeta, controllerMeta);
@@ -79,6 +72,13 @@ public class CommonHandler {
             if (requestMeta.origin != null && RequestMethod.OPTIONS.name().equalsIgnoreCase(requestMeta.method)) {
                 responseMeta.status = 200;
                 responseMeta.statusMessage = "OK";
+                return;
+            }
+        }
+        //处理Basic Auth
+        {
+            if (!handleBasicAuth(requestMeta, responseMeta)) {
+                logger.warn("[BasicAuth]基本认证失败!");
                 return;
             }
         }

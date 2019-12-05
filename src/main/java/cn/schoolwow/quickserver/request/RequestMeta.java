@@ -18,6 +18,10 @@ public class RequestMeta {
      */
     public InetAddress remoteAddress;
     /**
+     * 客户端真实IP
+     */
+    public String ip;
+    /**
      * 请求方法
      */
     public String method;

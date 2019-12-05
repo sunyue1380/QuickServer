@@ -13,6 +13,7 @@ public class RequestHandler {
     private static Logger logger = LoggerFactory.getLogger(RequestHandler.class);
     private static final int CR = 0x0D;
     private static final int LF = 0x0A;
+    private static String[] IPHeaders = {"X-Real-IP","X-Forwarded-For","Proxy-Client-IP","WL-Proxy-Client-IP","HTTP_CLIENT_IP","HTTP_X_FORWARDED_FOR"};
 
     /**
      * 解析Http请求
@@ -80,7 +81,9 @@ public class RequestHandler {
                     String name = headerLines[i].substring(0, headerLines[i].indexOf(":"));
                     String value = headerLines[i].substring(headerLines[i].indexOf(":") + 2);
                     requestMeta.headers.put(name, value);
-                    switch (name.toLowerCase()) {
+
+                    String nameLowercase = name.toLowerCase();
+                    switch (nameLowercase) {
                         case "content-type": {
                             requestMeta.contentType = value;
                             handleContentType(value, requestMeta);
@@ -127,6 +130,7 @@ public class RequestHandler {
             }
         }
         requestMeta.requestURI = URLDecoder.decode(requestMeta.requestURI,requestMeta.charset);
+        handleIP(requestMeta);
         //处理分块传输
         {
             handleTransferEncoding(requestMeta);
@@ -151,6 +155,26 @@ public class RequestHandler {
         }
         logger.trace("[请求行]{}", requestMeta.method + " " + requestMeta.requestURI);
         return true;
+    }
+
+    /**
+     * 获取真实IP地址
+     */
+    private static void handleIP(RequestMeta requestMeta){
+        Set<String> keySet = requestMeta.headers.keySet();
+        for(String ipHeader:IPHeaders){
+            for(String key:keySet){
+                if(key.equalsIgnoreCase(ipHeader)){
+                    String value = requestMeta.headers.get(key);
+                    if(value.contains(",")){
+                        requestMeta.ip = value.substring(0,value.indexOf(","));
+                    }else{
+                        requestMeta.ip = value;
+                    }
+                    return;
+                }
+            }
+        }
     }
 
     /**

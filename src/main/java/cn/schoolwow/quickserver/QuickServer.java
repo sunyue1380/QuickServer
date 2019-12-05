@@ -94,6 +94,7 @@ public class QuickServer {
             threadPoolExecutor.execute(() -> {
                 final RequestMeta requestMeta = new RequestMeta();
                 requestMeta.remoteAddress = socket.getInetAddress();
+                requestMeta.ip = requestMeta.remoteAddress.getHostAddress();
                 final ResponseMeta responseMeta = new ResponseMeta();
                 logger.trace("[接收请求]客户端地址:{}",requestMeta.remoteAddress);
                 try {
