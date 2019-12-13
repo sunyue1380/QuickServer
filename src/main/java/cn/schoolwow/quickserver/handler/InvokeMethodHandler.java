@@ -175,6 +175,8 @@ public class InvokeMethodHandler {
         } catch (BusinessException e) {
             responseMeta.response(e.httpStatus, requestMeta);
             responseMeta.body = e.body;
+        } catch (InvocationTargetException e) {
+            result = e.getTargetException();
         } catch (Exception e) {
             e.printStackTrace();
             result = e;
