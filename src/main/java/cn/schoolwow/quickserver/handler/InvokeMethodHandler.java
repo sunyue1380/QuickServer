@@ -381,6 +381,14 @@ public class InvokeMethodHandler {
             } else if ("java.util.Date".equals(parameter.getType().getName())) {
                 sdf.applyPattern(datePattern);
                 return sdf.parse(requestParameter);
+            } else if(parameter.getType().isEnum()){
+                Enum[] enums = (Enum[]) parameter.getType().getEnumConstants();
+                for(Enum _enum:enums){
+                    if(_enum.name().equalsIgnoreCase(requestParameter)){
+                        return _enum;
+                    }
+                }
+                return null;
             } else {
                 return parameter.getType().getConstructor(String.class).newInstance(requestParameter);
             }
