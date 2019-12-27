@@ -389,8 +389,12 @@ public class InvokeMethodHandler {
                     }
                 }
                 return null;
-            } else {
+            } else if(isWrapper(parameter.getType())){
                 return parameter.getType().getConstructor(String.class).newInstance(requestParameter);
+            } else if("java.lang.String".equals(parameter.getType().getName())){
+                return requestParameter;
+            } else{
+                return JSON.parseObject(requestParameter).toJavaObject(parameter.getType());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -412,5 +416,16 @@ public class InvokeMethodHandler {
             }
         }
         throw new IllegalArgumentException("不支持的数组参数类型!类型:" + parameterType);
+    }
+
+    /**是否是包装类型*/
+    private static boolean isWrapper(Class _class){
+        try {
+            Field field = _class.getDeclaredField("TYPE");
+            int modifier = field.getModifiers();
+            return Modifier.isPublic(modifier)&&Modifier.isStatic(modifier)&&Modifier.isFinal(modifier);
+        } catch (NoSuchFieldException e) {
+            return false;
+        }
     }
 }

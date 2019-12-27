@@ -1,8 +1,10 @@
 package cn.schoolwow.quickserver;
 
+import cn.schoolwow.quickserver.domain.Filter;
 import cn.schoolwow.quickserver.handler.CommonHandler;
 import cn.schoolwow.quickserver.handler.ControllerHandler;
 import cn.schoolwow.quickserver.handler.ControllerMeta;
+import cn.schoolwow.quickserver.interceptor.HandlerInterceptor;
 import cn.schoolwow.quickserver.request.RequestHandler;
 import cn.schoolwow.quickserver.request.RequestMeta;
 import cn.schoolwow.quickserver.response.ResponseHandler;
@@ -54,6 +56,16 @@ public class QuickServer {
 
     public QuickServer register(Class _class) {
         controllerMeta.component.register(_class);
+        return this;
+    }
+
+    public QuickServer interceptor(String[] patterns, String[] excludePatterns, HandlerInterceptor handlerInterceptor){
+        Filter filter = new Filter();
+        filter.patterns = patterns;
+        filter.excludePatterns = excludePatterns;
+        filter.handlerInterceptorClass = (Class<HandlerInterceptor>) handlerInterceptor.getClass();
+        filter.handlerInterceptor = handlerInterceptor;
+        controllerMeta.filterList.add(filter);
         return this;
     }
 
