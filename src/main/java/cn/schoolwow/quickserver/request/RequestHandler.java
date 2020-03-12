@@ -143,9 +143,14 @@ public class RequestHandler {
                 if (requestMeta.contentType.contains("application/x-www-form-urlencoded")
                         || requestMeta.contentType.contains("application/json")
                         || requestMeta.contentType.startsWith("text/")) {
-                    byte[] bytes = new byte[(int) requestMeta.contentLength];
-                    requestMeta.inputStream.read(bytes, 0, bytes.length);
-                    requestMeta.body = new String(bytes, requestMeta.charset);
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    byte[] bytes = new byte[8192];
+                    int length = 0;
+                    while(requestMeta.inputStream.available()>0){
+                        length = requestMeta.inputStream.read(bytes);
+                        baos.write(bytes,0,length);
+                    }
+                    requestMeta.body = new String(baos.toByteArray(), requestMeta.charset);
                 }
                 //处理post表单参数
                 if (requestMeta.contentType.contains("application/x-www-form-urlencoded")) {
