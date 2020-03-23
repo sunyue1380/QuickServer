@@ -15,7 +15,6 @@ import cn.schoolwow.quickserver.util.QuickServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -86,7 +85,7 @@ public class QuickServer {
         return this;
     }
 
-    public void asyncStart() throws IOException {
+    public void asyncStart() {
         assureInitial();
         threadPoolExecutor.execute(() -> {
             try {
@@ -110,7 +109,7 @@ public class QuickServer {
                 final ResponseMeta responseMeta = new ResponseMeta();
                 logger.trace("[接收请求]客户端地址:{}",requestMeta.remoteAddress);
                 try {
-                    requestMeta.inputStream = new BufferedInputStream(socket.getInputStream());
+                    requestMeta.inputStream = socket.getInputStream();
                     responseMeta.outputStream = new BufferedOutputStream(socket.getOutputStream());
                     if(!RequestHandler.parseRequest(requestMeta)||null==requestMeta.method){
                         return;

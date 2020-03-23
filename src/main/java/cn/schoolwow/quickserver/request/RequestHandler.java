@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URLDecoder;
+import java.nio.CharBuffer;
 import java.util.*;
 
 public class RequestHandler {
@@ -143,14 +144,10 @@ public class RequestHandler {
                 if (requestMeta.contentType.contains("application/x-www-form-urlencoded")
                         || requestMeta.contentType.contains("application/json")
                         || requestMeta.contentType.startsWith("text/")) {
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    byte[] bytes = new byte[8192];
-                    int length = 0;
-                    while(requestMeta.inputStream.available()>0){
-                        length = requestMeta.inputStream.read(bytes);
-                        baos.write(bytes,0,length);
-                    }
-                    requestMeta.body = new String(baos.toByteArray(), requestMeta.charset);
+                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(requestMeta.inputStream,requestMeta.charset));
+                    CharBuffer charBuffer = CharBuffer.allocate((int) requestMeta.contentLength);
+                    bufferedReader.read(charBuffer);
+                    requestMeta.body = new String(charBuffer.array());
                 }
                 //处理post表单参数
                 if (requestMeta.contentType.contains("application/x-www-form-urlencoded")) {
